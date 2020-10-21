@@ -209,7 +209,184 @@ MOV buffPass[1],32h;2
 MOV buffPass[2],33h;3
 MOV buffPass[3],34h;4
 saveCadena  buffPass,passIndex
+pp linea 
 pp usersIndex[0]
+pp ln 
 pp passIndex[0]
+pp linea 
 INC ind[0]
 endM
+activarModoVideo MACRO
+    MOV ax,13h
+    int 10h 
+    mov ax,0A000h
+    MOV ds,ax; DS=A000h activa mem grafics
+endM  
+activaModoTexto macro
+MOV ax,03h
+int 10h 
+moverArrobaDS
+endM
+
+ppMargen MACRO color ; formula 320*i+j = (i,j)  0 a 319 y de 0 a 199 
+LOCAL arriba,abajo,izquierda,derecha
+MOV dl,color
+
+MOV di,6405;(20,5) 
+arriba:
+MOV [di],dl
+inc di
+cmp di,6714;(20,314)
+JNE arriba
+
+MOV di,60805;(190,5)
+abajo:
+MOV [di],dl
+inc di
+cmp di,61115;(190,315)
+JNE abajo
+
+
+MOV di,6405;(20,5)
+izquierda:
+MOV [di],dl
+add di,320 ;salta de fila 
+cmp di,60805;(190,5)
+JNE izquierda
+
+MOV di,6714;(20,314)
+derecha:
+MOV [di],dl
+add di,320;salta de fila 
+cmp di,61114;(190,314)
+JNE derecha
+endM
+
+pintarBall macro pos,color
+push dx
+MOV di,pos
+MOV dl,color
+MOV [di],dl
+pop dx
+endM 
+
+delay macro valor 
+LOCAL r1_,r2_,ex
+push di
+push si
+MOV si,valor
+r1_:
+    dec si
+    JZ ex
+    mov di,valor
+    r2_:
+    dec di
+    JNZ r2_
+    JMP r1_
+ex:     
+pop si 
+pop di 
+endm 
+
+validarPass macro entrada
+local recorre,ex,error_,v1_,v2_
+push si
+xor si,si 
+recorre:
+cmp entrada[si],36
+JE ex
+cmp entrada[si],48;0
+JAE v1_
+JMP error_
+        v1_:
+            cmp entrada[si],57
+            JBE v2_
+            JMP error_
+v2_:
+inc si 
+JMP recorre
+error_:
+pp passOnlyNum
+JMP pedirPass
+ex:
+pop si 
+endM 
+
+ppBloques macro x,y
+LOCAL ciclo,space,ex,rellena
+push bx 
+push ax
+PUSH si 
+    xor ax,ax
+    xor si,si
+    MOV dl,4 ;color 
+    getPos x,y
+    MOV ax,si
+    add ax,305
+        MOV contpp,si;reset
+        MOV di,contpp
+        add di,59
+        ciclo:
+        mov cx,8
+        mov bx,si
+        rellena:
+        MOV [bx],dl
+        add bx,320
+        loop rellena
+        inc si
+        inc contpp
+        cmp contpp,di
+        JE  space
+        cmp si,ax
+        JNE ciclo
+        JMP ex
+space:
+        add si,3
+        MOV contpp,si;reset
+        MOV di,contpp
+        add di,59
+        inc dl
+JMP ciclo
+ex:
+pop si 
+pop ax
+pop bx 
+endM
+
+ppBarra macro x,y,len
+LOCAL ciclo,rellena
+push ax 
+push bx 
+    MOV dl,14;color
+    
+    getPos x,y
+    MOV ax,si
+    add ax,len
+    ciclo:
+    MOV [si],dl
+        mov cx,5
+        mov bx,si
+        rellena:
+        MOV [bx],dl
+        add bx,320
+        loop rellena
+    inc si
+    cmp si,ax;si+50,fin
+    JNE ciclo
+pop bx
+pop ax 
+endM
+ 
+getPos  macro x,y
+PUSH dx
+push ax 
+push bx
+    MOV ax,320
+    mov bx,x
+    mul bx
+    MOV si,ax;resultado de la mult
+    ADD si,y
+pop bx
+pop ax
+pop dx 
+endM 

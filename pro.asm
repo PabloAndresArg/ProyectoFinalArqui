@@ -25,8 +25,8 @@ mIguales db 10,13, 'OK iguales','$'
 buffUser  db 20 dup('$'),'$'
 buffPass  db 20 dup('$'),'$'
 ind dw 1 dup(0),'$';indice ids-results
-usersIndex db 200 dup('$'),'$';10*20
-passIndex db 200 dup('$'),'$';10*20
+usersIndex db 300 dup('$'),'$';15*20
+passIndex db 300 dup('$'),'$';15*20
 si_2 dw 1 dup(0),'$'
 noEsId db 10,13, 'NUEVO USUARIO OK' ,10 ,13,'$'
 No_reg db 10,13, 'usuario no registrado' ,10 ,13,'$'
@@ -34,6 +34,21 @@ logIN_ db 10,13, '** LOGIN **' ,10 ,13,'$'
 okReg db 10,13, 'OK REGISTRADO..' ,10 ,13,'$'
 linea db 10,13, '--' ,10 ,13,'$'
 okLogeo db 10,13, 'ACCESO PERMITIDO' ,10 ,13,'$'
+passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
+bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' ; databyte porque el ascii va de 0 a 255  el $ indica hasta donde tiene que imprimir
+contpp dw 0
+
+stateP1 db 0
+stateP2  db 0
+stateP3  db 0
+posxP1  dw 0
+posxP2  dw 0
+posxP3  dw 0
+posyP1  dw 0
+posyP2  dw 0
+posyP3  dw 0
+BarraInicio dw 1 dup('0'),'$'
+
 
 ;login
 .code
@@ -41,7 +56,28 @@ moverArrobaDS
     limpiaArr usersIndex , sizeOF usersIndex , 36
     limpiaArr passIndex , sizeOF passIndex , 36 
 InitPassAdmin
-  
+pp bienvenida
+
+
+
+leerChar
+    activarModoVideo
+    ppMargen 95D
+    ppBloques 22,6
+    ppBloques 36,6 
+    ppBarra 180,160,95
+
+        mov dx,35360
+        mover2:
+          pintarBall dx,0 
+          sub dx,319 
+          pintarBall  dx,12
+          delay 200      
+        jmp mover2
+    activaModoTexto
+
+
+
 inicio:
     xor ax,ax
     pp menu
@@ -75,30 +111,22 @@ ingresar:
     cmp idUser[0],bl
     JNE ingresar
     pp okLogeo
-    leerChar
     
-     
+    ; activarModoVideo
+    ; ppMargen 95D
 
+    ;     mov dx,35360
+    ;     mover:
+    ;       pintarBall dx,0 
+    ;       sub dx,319 
+    ;       pintarBall  dx,12
+    ;       delay 200        
+    ;     jmp mover
 
+    ; mov ah,10h
+    ; int 16h ; lee si se presiona una tecla para salir del modo video
 
-    MOV ax,13h
-    int 10h 
-    xor cx,cx
-    mov cx,13eh
-    ejex_:
-       ppPixel cx,95D,4fh
-    loop ejex_
-
-    MOV cx,120
-    ejey_:
-        ppPixel 95D,cx,4fh
-    loop ejey_
-
-    mov ah,10h
-    int 16h ; lee si se presiona una tecla para salir del modo video
-
-    MOV ax,3h
-    int 10h 
+    activaModoTexto
     jmp inicio
 registrar:
     limpiaArr buffUser , sizeOF buffUser , 36
@@ -108,11 +136,12 @@ registrar:
     pp form1 
     getCadena  buffUser 
     UserNoRep buffUser,usersIndex 
-    pp form2
-
-    getCadena  buffPass
-    saveCadena  buffPass,passIndex
     
+pedirPass:
+    pp form2
+    getCadena  buffPass
+    validarPass buffPass
+    saveCadena  buffPass,passIndex
     inc ind[0]
     pp linea
     pp okReg
