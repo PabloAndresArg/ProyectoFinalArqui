@@ -37,18 +37,17 @@ okLogeo db 10,13, 'ACCESO PERMITIDO' ,10 ,13,'$'
 passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
 bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' ; databyte porque el ascii va de 0 a 255  el $ indica hasta donde tiene que imprimir
 contpp dw 0
-
-stateP1 db 0
-stateP2  db 0
-stateP3  db 0
-posxP1  dw 0
-posxP2  dw 0
-posxP3  dw 0
-posyP1  dw 0
-posyP2  dw 0
-posyP3  dw 0
 BarraInicio dw 1 dup('0'),'$'
 
+pelota STRUCT
+    estado db 0 ; solo llega hasta el numero 3h 
+    x dw 0
+    y dw 0
+pelota ENDS
+
+pelota1 pelota<'0','0','0'>
+pelota2 pelota<'0','0','0'>
+pelota3 pelota<'0','0','0'>
 
 ;login
 .code
@@ -58,7 +57,7 @@ moverArrobaDS
 InitPassAdmin
 pp bienvenida
 
-
+;declaracion del struct
 
 leerChar
     activarModoVideo
@@ -66,14 +65,10 @@ leerChar
     ppBloques 22,6
     ppBloques 36,6 
     ppBarra 180,160,95
-
-        mov dx,35360
-        mover2:
-          pintarBall dx,0 
-          sub dx,319 
-          pintarBall  dx,12
-          delay 200      
-        jmp mover2
+        ;150,320 (i,j)=150*320+160 = 
+        MOV pelota1.x,150
+        MOV pelota1.y,160
+        moverPelota pelota1
     activaModoTexto
 
 
@@ -91,6 +86,9 @@ inicio:
     pp noEsparada
     jmp inicio
 ;subRutinas
+
+
+
 ;subRutinas
 ingresar:
     limpiaArr buffUser , sizeOF buffUser , 36

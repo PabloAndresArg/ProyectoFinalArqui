@@ -377,7 +377,7 @@ pop bx
 pop ax 
 endM
  
-getPos  macro x,y
+getPos  macro x,y;SI tiene le valor 
 PUSH dx
 push ax 
 push bx
@@ -389,4 +389,58 @@ push bx
 pop bx
 pop ax
 pop dx 
+endM 
+
+verificaState MACRO ball
+LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha
+    cmp ball.estado,0
+    JE Arriba_izq
+    cmp ball.estado,1
+    JE Arriba_Der
+    cmp ball.estado,2
+    JE Abajo_izq
+    cmp ball.estado,3
+    JE Abajo_derecha
+
+    Arriba_izq:
+          getPos ball.x,ball.y
+          pintarBall si,0 
+          dec ball.x 
+          dec ball.y
+          getPos ball.x,ball.y
+          pintarBall si,12
+    JMP ex
+    Arriba_Der:
+          getPos ball.x,ball.y
+          pintarBall si,0 
+          INC ball.x 
+          dec ball.y
+          getPos ball.x,ball.y
+          pintarBall si,12
+    JMP ex 
+    Abajo_izq:
+          getPos ball.x,ball.y
+          pintarBall si,0 
+          dec ball.x 
+          INC ball.y
+          getPos ball.x,ball.y
+          pintarBall si,12
+    JMP ex
+    Abajo_derecha:
+          getPos ball.x,ball.y
+          pintarBall si,0 
+          INC ball.x 
+          INC ball.y
+          getPos ball.x,ball.y
+          pintarBall si,12
+    JMP ex 
+ex:
+endM
+
+moverPelota MACRO ball 
+        mover2:
+            verificaState       ball
+            delay               500            
+        jmp mover2
+
 endM 
