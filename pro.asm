@@ -38,17 +38,20 @@ passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
 bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' ; databyte porque el ascii va de 0 a 255  el $ indica hasta donde tiene que imprimir
 contpp dw 0
 BarraInicio dw 1 dup('0'),'$'
-
+vel dw 0  
 pelota STRUCT
     estado db 0 ; solo llega hasta el numero 3h 
     x dw 0
     y dw 0
 pelota ENDS
-
 pelota1 pelota<'0','0','0'>
 pelota2 pelota<'0','0','0'>
 pelota3 pelota<'0','0','0'>
-
+Barra STRUCT
+    y dw 0
+    len dw 0
+Barra ENDS
+barr Barra<'0','0'>
 ;login
 .code
 moverArrobaDS
@@ -64,12 +67,18 @@ leerChar
     ppMargen 95D
     ppBloques 22,6
     ppBloques 36,6 
-    ppBarra 180,160,95
-        ;150,320 (i,j)=150*320+160 = 
+    MOV barr.y,160
+    MOV barr.len,95
+    ppBarra 14
+        ;150,320 (i,j)=150*320+40 = 
+        MOV vel,150
         MOV pelota1.x,150
-        MOV pelota1.y,160
-        moverPelota pelota1
+        MOV pelota1.y,280
+        MOV pelota1.estado,1
+        JUGAR pelota1
     activaModoTexto
+
+
 
 
 
@@ -87,7 +96,29 @@ inicio:
     jmp inicio
 ;subRutinas
 
+moveBarraD PROC
+    mov ax,barr.y
+    inc ax
+    cmp ax,220
+    JE exD 
+    ppBarra 0h
+    inc barr.y
+    ppBarra 14
+    exD:
+RET
+moveBarraD ENDP
 
+moveBarraI PROC
+    mov ax,barr.y
+    dec ax
+    cmp ax,5
+    JE exD 
+    ppBarra 0h
+    dec barr.y
+    ppBarra 14
+    exD:
+RET  
+moveBarraI ENDP
 
 ;subRutinas
 ingresar:
@@ -110,19 +141,7 @@ ingresar:
     JNE ingresar
     pp okLogeo
     
-    ; activarModoVideo
-    ; ppMargen 95D
 
-    ;     mov dx,35360
-    ;     mover:
-    ;       pintarBall dx,0 
-    ;       sub dx,319 
-    ;       pintarBall  dx,12
-    ;       delay 200        
-    ;     jmp mover
-
-    ; mov ah,10h
-    ; int 16h ; lee si se presiona una tecla para salir del modo video
 
     activaModoTexto
     jmp inicio

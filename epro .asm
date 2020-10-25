@@ -319,7 +319,7 @@ push ax
 PUSH si 
     xor ax,ax
     xor si,si
-    MOV dl,4 ;color 
+    MOV dl,5 ;color 
     getPos x,y
     MOV ax,si
     add ax,305
@@ -353,15 +353,15 @@ pop ax
 pop bx 
 endM
 
-ppBarra macro x,y,len
-LOCAL ciclo,rellena
+ppBarra macro color 
+LOCAL ciclo,rellena,lim
 push ax 
 push bx 
-    MOV dl,14;color
     
-    getPos x,y
+    getPos 180,barr.y; SIEMPRE ESTA EN 160
+    MOV dl,color;color
     MOV ax,si
-    add ax,len
+    add ax,barr.len
     ciclo:
     MOV [si],dl
         mov cx,5
@@ -371,8 +371,9 @@ push bx
         add bx,320
         loop rellena
     inc si
-    cmp si,ax;si+50,fin
+    cmp si,ax;si+len,fin
     JNE ciclo
+
 pop bx
 pop ax 
 endM
@@ -392,7 +393,7 @@ pop dx
 endM 
 
 verificaState MACRO ball
-LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha
+LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha,t1,t2,t3,t4 ,a1,a2,a3,a4
     cmp ball.estado,0
     JE Arriba_izq
     cmp ball.estado,1
@@ -403,44 +404,157 @@ LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha
     JE Abajo_derecha
 
     Arriba_izq:
-          getPos ball.x,ball.y
+          getPos ball.x,ball.y ; SALE EL VALOR EN EL SI
           pintarBall si,0 
           dec ball.x 
           dec ball.y
-          getPos ball.x,ball.y
-          pintarBall si,12
+   revisarColor  ball.x , ball.y   
+          cmp ball.y,6
+          JBE t1
+          cmp ball.x,21
+          JBE t3
+          jmp ex
+          t1:
+          mov ball.estado,1
+          JMP ex
+          t3:
+          mov ball.estado,2
     JMP ex
+
     Arriba_Der:
           getPos ball.x,ball.y
           pintarBall si,0 
-          INC ball.x 
-          dec ball.y
-          getPos ball.x,ball.y
-          pintarBall si,12
-    JMP ex 
-    Abajo_izq:
+          dec ball.x;si decremento la fila voy para arriba 
+          INC ball.y; voy para la derecha
+revisarColor  ball.x , ball.y   
+          cmp ball.y,312
+          JAE t2
+          cmp ball.x,21
+          JBE t4
+          JMP ex
+          t2:
+          MOV ball.estado,0
+          JMP ex
+          t4:
+          MOV ball.estado,3
+    JMP ex
+    Abajo_izq: 
           getPos ball.x,ball.y
           pintarBall si,0 
-          dec ball.x 
-          INC ball.y
-          getPos ball.x,ball.y
-          pintarBall si,12
+          INC ball.x;para abajo 
+          dec ball.y;IZQUIERDA
+ revisarColor  ball.x , ball.y   
+          cmp ball.y,6
+          JBE a1
+          cmp ball.x,189
+          JAE a2
+          JMP ex
+          a1:
+          MOV ball.estado,3  
+          JMP ex
+          a2:
+          MOV ball.estado,0
     JMP ex
     Abajo_derecha:
           getPos ball.x,ball.y
           pintarBall si,0 
-          INC ball.x 
-          INC ball.y
-          getPos ball.x,ball.y
-          pintarBall si,12
+          INC ball.x ;para abajo 
+          INC ball.y;derecha
+revisarColor  ball.x , ball.y   
+          cmp ball.y,312
+          JAE a3
+          cmp ball.x,189
+          JAE a4
+          JMP ex
+          a3: 
+          MOV ball.estado,2
+          JMP ex
+          a4: 
+          MOV ball.estado,1
     JMP ex 
-ex:
+ex:     
+getPos ball.x,ball.y
+pintarBall si,12
+
 endM
 
-moverPelota MACRO ball 
-        mover2:
-            verificaState       ball
-            delay               500            
-        jmp mover2
+JUGAR MACRO ball 
+        encicla:
+            subMenu
+            delay               vel 
+            verificaState       ball  
+        jmp encicla
+endM 
+
+revisarColor MACRO  x , y ;LA SALIDA AL
+LOCAL ex,gris,rosa,naranja,blanco,azul
+Push bx
+push ax
+    xor bx,bx
+    xor ax,ax
+
+    MOV DX,x;row-rev
+    MOV CX,y;column-rev
+    MOV ah,0Dh
+    MOV bh,0
+    int 10h
+        CMP AL,5h
+        JE rosa
+        CMP AL,6h
+        JE naranja
+        CMP AL,7h
+        JE blanco
+        CMP AL,8h
+        JE gris
+        CMP AL,9h
+        JE azul
+    JMP ex
+    rosa:
+    MOV vel,100
+    JMP ex
+    naranja:
+    MOV vel,600
+    JMP ex
+    blanco:
+    MOV vel,200
+    JMP ex
+    gris:
+    MOV vel,170
+    JMP ex
+    azul:
+    MOV vel,500
+    JMP ex
+    ex:
+pop ax
+pop bx
+endM 
+
+subMenu MACRO
+LOCAL der,izq,nada ,pausa
+xor ax,ax 
+    MOV ah,11h
+    int 16h
+    JZ nada
+    ; pregunta estado buffer 
+    xor ax,ax
+    MOV ah,00
+    int 16h  
+    cmp al,1bH;esc
+    JE pausa
+    cmp al,'4'
+    JE izq
+    cmp al,'6'
+    JE der
+    JMP nada
+    der:
+        call moveBarraD
+        JMP nada
+    izq:
+        call moveBarraI
+        JMP nada
+    pausa: 
+
+nada:
 
 endM 
+
