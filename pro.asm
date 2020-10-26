@@ -54,19 +54,22 @@ Barra ENDS
 barr Barra<'0','0'>
 ;login
 .code
+leerChar
 moverArrobaDS
     limpiaArr usersIndex , sizeOF usersIndex , 36
     limpiaArr passIndex , sizeOF passIndex , 36 
-InitPassAdmin
-pp bienvenida
+    InitPassAdmin
+menuPrincipal:
+    activaModoTexto
+    pp bienvenida
 
 ;declaracion del struct
+;===================================================================================================
 
-leerChar
     activarModoVideo
     ppMargen 95D
-    ppBloques 22,6
-    ppBloques 36,6 
+    ppBloques 22,6 ; limite de abajo 29
+    ppBloques 36,6 ; limite de abajo 43 
     MOV barr.y,160
     MOV barr.len,95
     ppBarra 14
@@ -76,8 +79,7 @@ leerChar
         MOV pelota1.y,280
         MOV pelota1.estado,1
         JUGAR pelota1
-    activaModoTexto
-
+;===================================================================================================
 
 
 
@@ -119,7 +121,24 @@ moveBarraI PROC
     exD:
 RET  
 moveBarraI ENDP
-
+pausar PROC
+    MOV ah,11h
+    int 16h
+    JZ nadaG
+    ; pregunta estado buffer 
+    xor ax,ax
+    MOV ah,00
+    int 16h 
+    cmp al,1bH;esc
+    JE salidaG
+    cmp al,32
+    JE menuPrincipal 
+    JMP nadaG
+    salidaG:
+    mov si,0 
+    nadaG:
+RET  
+pausar ENDP
 ;subRutinas
 ingresar:
     limpiaArr buffUser , sizeOF buffUser , 36

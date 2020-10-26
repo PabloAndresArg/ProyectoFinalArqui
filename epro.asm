@@ -393,7 +393,7 @@ pop dx
 endM 
 
 verificaState MACRO ball
-LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha,t1,t2,t3,t4 ,a1,a2,a3,a4
+LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha,t1,t2,t3,t4,a1,a2,a3,a4
     cmp ball.estado,0
     JE Arriba_izq
     cmp ball.estado,1
@@ -408,7 +408,7 @@ LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha,t1,t2,t3,t4 ,a1,a2,a3,a4
           pintarBall si,0 
           dec ball.x 
           dec ball.y
-   revisarColor  ball.x , ball.y   
+          revisarColor  ball 
           cmp ball.y,6
           JBE t1
           cmp ball.x,21
@@ -426,7 +426,7 @@ LOCAL ex,Arriba_izq,Arriba_Der,Abajo_izq,Abajo_derecha,t1,t2,t3,t4 ,a1,a2,a3,a4
           pintarBall si,0 
           dec ball.x;si decremento la fila voy para arriba 
           INC ball.y; voy para la derecha
-revisarColor  ball.x , ball.y   
+          revisarColor  ball  
           cmp ball.y,312
           JAE t2
           cmp ball.x,21
@@ -443,7 +443,7 @@ revisarColor  ball.x , ball.y
           pintarBall si,0 
           INC ball.x;para abajo 
           dec ball.y;IZQUIERDA
- revisarColor  ball.x , ball.y   
+          revisarColor  ball 
           cmp ball.y,6
           JBE a1
           cmp ball.x,189
@@ -460,7 +460,7 @@ revisarColor  ball.x , ball.y
           pintarBall si,0 
           INC ball.x ;para abajo 
           INC ball.y;derecha
-revisarColor  ball.x , ball.y   
+          revisarColor  ball   
           cmp ball.y,312
           JAE a3
           cmp ball.x,189
@@ -475,7 +475,7 @@ revisarColor  ball.x , ball.y
 ex:     
 getPos ball.x,ball.y
 pintarBall si,12
-
+ppBarra 14
 endM
 
 JUGAR MACRO ball 
@@ -486,15 +486,14 @@ JUGAR MACRO ball
         jmp encicla
 endM 
 
-revisarColor MACRO  x , y ;LA SALIDA AL
-LOCAL ex,gris,rosa,naranja,blanco,azul
+revisarColor MACRO ball;LA SALIDA AL
+LOCAL ex,nada,gris,rosa,naranja,bar,blanco,azul,gr1,gr2,gr3,gr4,gr5,gr6,ro1,ro2,ro3,ro4,ro5,ro6,na1,na2,na3,na4,na5,na6,bla1,bla2,bla3,bla4,bla5,bla6,z1,z2,z3,z4,z5,z6,s1
 Push bx
 push ax
-    xor bx,bx
-    xor ax,ax
-
-    MOV DX,x;row-rev
-    MOV CX,y;column-rev
+ xor bx,bx
+ xor ax,ax
+    MOV DX,ball.x;row-rev
+    MOV CX,ball.y;column-rev
     MOV ah,0Dh
     MOV bh,0
     int 10h
@@ -508,23 +507,106 @@ push ax
         JE gris
         CMP AL,9h
         JE azul
-    JMP ex
+        CMP AL,14
+        JE bar
+    JMP nada
     rosa:
-    MOV vel,100
+            ; primero comparar con lo mas bajo 
+            CMP ball.x,36
+            JAE ro1
+            CMP ball.x,22
+            JAE ro2
+                ro1:
+                    rebote  6,64,36,43,ball 
+                    ppClearBlock 36,6;col4
+                JMP ex
+
+                ro2:
+                    rebote  6,64,22,29,ball
+                    ppClearBlock 22,6;col4
+                JMP ex   
+
+                
+
     JMP ex
     naranja:
-    MOV vel,600
+                ; primero comparar con lo mas bajo 
+            CMP ball.x,36
+            JAE na1
+            CMP ball.x,22
+            JAE na2
+                na1:
+                    rebote  68,126,36,43,ball 
+                    ppClearBlock 36,68;col4
+                JMP ex
+
+                na2:
+                    rebote  68,126,22,29,ball
+                    ppClearBlock 22,68;col4
+                JMP ex 
     JMP ex
     blanco:
-    MOV vel,200
+                ; primero comparar con lo mas bajo 
+            CMP ball.x,36
+            JAE bla1
+            CMP ball.x,22
+            JAE bla2
+                bla1:
+                    rebote  130,188,36,43,ball 
+                    ppClearBlock 36,130;col3
+                JMP ex
+
+                bla2:
+                    rebote  130,188,22,29,ball
+                    ppClearBlock 22,130;col3
+                JMP ex 
     JMP ex
     gris:
-    MOV vel,170
+            ; primero comparar con lo mas bajo 
+            CMP ball.x,36
+            JAE gr1 ; ENTRA AUNQUE NO SEA EXACTO 
+            CMP ball.x,22
+            JAE gr2
+            
+            
+                gr1:                 
+                    rebote  192,250,36,43,ball 
+                    ppClearBlock 36,192;col4
+
+                JMP ex
+                gr2:
+                    rebote  192,250,22,29,ball 
+                    ppClearBlock 22,192;col4
+                JMP ex
+                
     JMP ex
     azul:
-    MOV vel,500
-    JMP ex
+            ; primero comparar con lo mas bajo 
+            CMP ball.x,36
+            JAE z1
+            CMP ball.x,22
+            JAE z2
+                z1:
+                    rebote  254,312,36,43,ball 
+                    ppClearBlock 36,254;col4
+                JMP ex
+
+                z2:
+                    rebote  254,312,22,29,ball 
+                    ppClearBlock 22,254;col4
+                JMP ex
+    bar: 
+        cmp ball.estado,2
+        JE s1
+        MOV ball.estado,1
+        JMP nada
+        s1:
+        MOV ball.estado,0
+        JMP nada
     ex:
+    ;aumentar los puntos
+    nada:
+
 pop ax
 pop bx
 endM 
@@ -553,8 +635,88 @@ xor ax,ax
         call moveBarraI
         JMP nada
     pausa: 
+    MOV si,1 
+    call pausar
+    cmp si,0
+    JNZ pausa
+    
 
 nada:
 
 endM 
+
+
+ppClearBlock macro x,y
+LOCAL ciclo,ex,rellena
+push bx 
+push ax
+PUSH si 
+    xor ax,ax
+    xor si,si
+    MOV dl,0h ;color 
+    getPos x,y
+    MOV ax,si
+    add ax,59
+        ciclo:
+        mov cx,8
+        mov bx,si
+        rellena:
+        MOV [bx],dl
+        add bx,320
+        loop rellena
+        inc si
+        cmp si,ax
+        JNE ciclo
+ex:
+pop si 
+pop ax
+pop bx 
+endM
+
+rebote MACRO  izq,der,Arriba,abajo,ball
+local left,rigth,up,down,ex,s1,s2,s3,s4
+cmp ball.y,izq
+JE  left
+cmp ball.y,der
+JE  rigth
+cmp ball.x,Arriba
+JE  up
+cmp ball.x,abajo
+JE  down
+JMP ex
+    left:
+    cmp ball.estado,1
+    JE s3
+        MOV ball.estado,2
+        JMP ex 
+    s3:
+        MOV ball.estado,0
+        JMP ex 
+    rigth:
+    cmp ball.estado,0
+    JE s4
+        MOV ball.estado,3
+        JMP ex 
+    s4:
+        MOV ball.estado,1
+        JMP ex        
+    up: 
+    cmp ball.estado,2
+    JE s2;sino abajo der
+        MOV ball.estado,1
+        JMP ex
+    s2:
+       MOV ball.estado,0
+        JMP ex
+    down:
+    cmp ball.estado,0;SINO ERA state 1
+    JE s1
+        MOV ball.estado,3
+        JMP ex 
+    s1:
+        MOV ball.estado,2
+        JMP ex
+ex:
+endM 
+
 
