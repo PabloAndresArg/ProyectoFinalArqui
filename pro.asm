@@ -12,7 +12,7 @@ form2 db 10,13,'Pass: ','$'
 resultados dw 20 dup('$'),'$'
 menos  db 10,13,'-','$'
 ln db 10 ,13,'$'
-si_3 dw 1 dup('$'),'$'
+once dw 1 dup('$'),'$'
 burbuja db 5 dup('$'),'$'
 ;COMPARACION
 aux_ db 20 dup('$'),'$'
@@ -44,14 +44,18 @@ pelota STRUCT
     x dw 0
     y dw 0
 pelota ENDS
-pelota1 pelota<'0','0','0'>
+pelota1 pelota<'0','0','1'>
 pelota2 pelota<'0','0','0'>
 pelota3 pelota<'0','0','0'>
 Barra STRUCT
     y dw 0
     len dw 0
+    px db 0
 Barra ENDS
-barr Barra<'0','0'>
+barr Barra<'0','0','0'>
+ptsActuales db 0 
+lev db 0 
+
 ;login
 .code
 leerChar
@@ -62,28 +66,6 @@ moverArrobaDS
 menuPrincipal:
     activaModoTexto
     pp bienvenida
-
-;declaracion del struct
-;===================================================================================================
-
-    activarModoVideo
-    ppMargen 95D
-    ppBloques 22,6 ; limite de abajo 29
-    ppBloques 36,6 ; limite de abajo 43 
-    MOV barr.y,160
-    MOV barr.len,95
-    ppBarra 14
-        ;150,320 (i,j)=150*320+40 = 
-        MOV vel,150
-        MOV pelota1.x,150
-        MOV pelota1.y,280
-        MOV pelota1.estado,1
-        JUGAR pelota1
-;===================================================================================================
-
-
-
-
 inicio:
     xor ax,ax
     pp menu
@@ -97,27 +79,52 @@ inicio:
     pp noEsparada
     jmp inicio
 ;subRutinas
-
+ppBarra proc 
+push ax 
+push bx 
+    getPos 180,barr.y
+    MOV dl,barr.px;color
+    MOV ax,si
+    add ax,barr.len
+    cic:
+    MOV [si],dl
+        mov cx,5
+        mov bx,si
+        rell:
+        MOV [bx],dl
+        add bx,320
+        loop rell
+    inc si
+    cmp si,ax
+    JNE cic
+pop bx
+pop ax 
+RET
+ppBarra endP
 moveBarraD PROC
     mov ax,barr.y
-    inc ax
-    cmp ax,220
-    JE exD 
-    ppBarra 0h
-    inc barr.y
-    ppBarra 14
+    add ax,4
+    cmp ax,215
+    JAE exD 
+    MOV barr.px,0
+    call ppBarra
+    add barr.y,4
+    MOV barr.px,14
+    call ppBarra 
     exD:
 RET
 moveBarraD ENDP
 
 moveBarraI PROC
     mov ax,barr.y
-    dec ax
+    sub ax,4
     cmp ax,5
-    JE exD 
-    ppBarra 0h
-    dec barr.y
-    ppBarra 14
+    JBE exD 
+    MOV barr.px,0
+    call ppBarra 
+    sub barr.y,4
+    MOV barr.px,14
+    call ppBarra 
     exD:
 RET  
 moveBarraI ENDP
@@ -139,12 +146,214 @@ pausar PROC
     nadaG:
 RET  
 pausar ENDP
-;subRutinas
+ppMargen PROC; formula 320*i+j = (i,j)  0 a 319 y de 0 a 199 
+    MOV dl,95D;color
+    MOV di,6405;(20,5) 
+    arriba:
+    MOV [di],dl
+    inc di
+    cmp di,6714;(20,314)
+    JNE arriba
+    MOV di,60805;(190,5)
+    abajo:
+    MOV [di],dl
+    inc di
+    cmp di,61115;(190,315)
+    JNE abajo
+    MOV di,6405;(20,5)
+    izquierda:
+    MOV [di],dl
+    add di,320 ;salta de fila 
+    cmp di,60805;(190,5)
+    JNE izquierda
+    MOV di,6714;(20,314)
+    derecha:
+    MOV [di],dl
+    add di,320;salta de fila 
+    cmp di,61114;(190,314)
+    JNE derecha
+RET
+ppMargen ENDP
+limpiarP PROC  
+MOV dl,0h
+MOV di,32006;(100,6) 
+lim:
+MOV [di],dl
+inc di 
+cmp di,61112;(190,312)
+JBE lim
+call ppMargen
+RET
+limpiarP ENDP
+reP1 PROC
+MOV pelota1.x,150
+MOV pelota1.y,280
+MOV pelota1.estado,1
+RET   
+reP1 ENDP
+reP2 PROC
+MOV pelota2.x,150
+MOV pelota2.y,280
+MOV pelota2.estado,5;sin mov
+RET   
+reP2 ENDP
+reP3 PROC
+MOV pelota3.x,150
+MOV pelota3.y,200
+MOV pelota3.estado,5;sin mov
+RET   
+reP3 ENDP
+ModoTieso proc
+getPos pelota1.x,pelota1.y
+pintarBall si,4
+wait_:
+    xor ax,ax
+    MOV ah,11h
+    int 16h
+    JZ nada
+    xor ax,ax
+    MOV ah,00
+    int 16h 
+    cmp al,32;esc
+    JE sal_
+    nada:
+JMP wait_
+sal_:
+RET
+ModoTieso endP
+JUGAR PROC 
+        MOV once,0
+        MOV ptsActuales,0
+        call ppMargen 
+        call bloNivel1
+        MOV barr.y,160
+        MOV barr.len,100
+        MOV barr.px,14
+        call ppBarra
+        MOV vel,220;220
+        call reP1
+        MOV pelota1.y,130;Rapido
+        call ModoTieso
+        encicla:
+            subMenu
+            delay               vel 
+            verificaState       pelota1
+        cmp lev,2
+        JAE l2
+        JMP con
+            l2:
+            verificaState       pelota2
+        cmp lev,3
+        JAE l3
+        JMP con
+            l3: 
+            verificaState       pelota3
+            con:  
+        jmp encicla
+        END_GAME:
+RET
+JUGAR ENDP
+
+bloNivel1 PROC
+    MOV lev,1
+    MOV bx,22
+    call ppBloques
+    MOV bx,36
+    call ppBloques 
+    RET
+bloNivel1 ENDP
+
+bloNivel2 PROC
+    call bloNivel1
+    MOV vel,185;185
+    MOV lev,2
+    call reP1
+    MOV pelota2.estado,5
+    call reP2
+    MOV bx,50
+    call ppBloques 
+RET
+bloNivel2 ENDP
+bloNivel3 PROC
+    call bloNivel2
+    MOV vel,160;175
+    MOV lev,3
+    call reP1
+    call reP2
+    call reP3
+    MOV bx,64
+    call ppBloques
+RET
+bloNivel3 ENDP
+ppBloques PROC 
+push di
+PUSH si 
+    xor ax,ax
+    xor si,si
+    getPos bx,6
+    MOV dl,5 ;color 
+    MOV ax,si
+    add ax,305
+        MOV contpp,si;reset
+        MOV di,contpp
+        add di,59
+        c__:
+        mov cx,8
+        mov bx,si
+        fill:
+        MOV [bx],dl
+        add bx,320
+        loop fill
+        inc si
+        inc contpp
+        cmp contpp,di
+        JE  space
+        cmp si,ax
+        JNE c__
+        JMP e_
+space:
+        add si,3
+        MOV contpp,si;reset
+        MOV di,contpp
+        add di,59
+        inc dl
+JMP c__
+e_:
+pop si 
+pop di
+RET 
+ppBloques endp
+
+ppClearBlock proc
+    push bx 
+    push ax
+    PUSH si 
+        xor ax,ax
+        xor si,si
+        MOV dl,0h ;color 
+        getPos bx,di;x,y
+        MOV ax,si
+        add ax,59
+            c_:
+            mov cx,8
+            mov bx,si
+            r_:
+            MOV [bx],dl
+            add bx,320
+            loop r_
+            inc si
+            cmp si,ax
+            JNE c_
+    pop si 
+    pop ax
+    pop bx 
+RET
+ppClearBlock endP
+;subRutinas-fin
 ingresar:
     limpiaArr buffUser , sizeOF buffUser , 36
     limpiaArr buffPass , sizeOF buffPass , 36 
     MOV zero[0],0
-
 
     pp logIN_
     pp form1 
@@ -159,10 +368,11 @@ ingresar:
     cmp idUser[0],bl
     JNE ingresar
     pp okLogeo
-    
-
-
+;=======================
+    activarModoVideo
+    call JUGAR
     activaModoTexto
+;======================
     jmp inicio
 registrar:
     limpiaArr buffUser , sizeOF buffUser , 36
