@@ -196,13 +196,7 @@ InitPassAdmin MACRO
 
 limpiaArr buffUser , sizeOF buffUser , 36
 limpiaArr buffPass , sizeOF buffPass , 36  
-MOV buffUser[0], 97;a 
-MOV buffUser[1], 64h;d
-MOV buffUser[2], 6Dh;m
-MOV buffUser[3], 69h;i
-MOV buffUser[4], 6Eh;n
-MOV buffUser[5], 62h;b
-MOV buffUser[6], 70h;p
+fillAdmin buffUser
 saveCadena  buffUser,usersIndex
 MOV buffPass[0],31h;1
 MOV buffPass[1],32h;2
@@ -585,6 +579,7 @@ push ax
         JMP nada
     ex:
         inc ptsActuales
+        call letreroPuntos
         cmp ptsActuales,10
         JE  level2
         cmp ptsActuales,17
@@ -695,3 +690,41 @@ rebote MACRO  izq,der,Arriba,abajo,ball
     ex:
 endM 
 
+imprimirChar MACRO  dl_
+MOV ah,06h
+MOV dl , dl_
+int 21h
+endM 
+
+fillAdmin macro var
+MOV var[0], 97;a 
+MOV var[1], 64h;d
+MOV var[2], 6Dh;m
+MOV var[3], 69h;i
+MOV var[4], 6Eh;n
+MOV var[5], 62h;b
+MOV var[6], 70h;p
+endM 
+
+Mmenu2 macro 
+    LOCAL ex
+    pp menu2
+    m2:
+    leerChar
+    cmp al,49
+    JE top1
+    cmp al,50
+    JE top2
+    cmp al,51
+    JE inicio
+    pp noEsparada
+    jmp m2
+    top1:
+    pp presiona32
+    leerChar
+    JMP ex
+    top2:
+    pp presiona32
+    leerChar
+    ex:
+endM

@@ -4,12 +4,16 @@ include epro.asm
 .stack 
 .data
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
+menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
+menu3 db 10,13,'1) BubbleSort',10,13,'2) QuickSort',10,13,'3) ShellSort',10,13,'4) SALIR',10,13,'Entrada:$'
 noEsparada db 10,13,'Entrada no esperada',10,13,'$'
 repetido db 10,13,'EL usuario : ' ,'$'
 yaenUso db ' YA ESTA EN USO',10,13,'$'
+presiona32 db 10,13,'Presiona La barra espaciadora',10,13,'$'
 form1 db 10,13,'User: ','$'
 form2 db 10,13,'Pass: ','$'
-resultados dw 20 dup('$'),'$'
+bufNum db 7 dup('$'),'$'
+lvlNum db 1 dup('$'),'$'
 menos  db 10,13,'-','$'
 ln db 10 ,13,'$'
 once dw 1 dup('$'),'$'
@@ -21,12 +25,13 @@ idUser  db 1 dup('0'),'$'
 idContra  db 1 dup('0'),'$'
 ;COMPARACION 
 ;login
+lvl db 'LVL','$'
 mIguales db 10,13, 'OK iguales','$'
 buffUser  db 20 dup('$'),'$'
 buffPass  db 20 dup('$'),'$'
-ind dw 1 dup(0),'$';indice ids-results
-usersIndex db 300 dup('$'),'$';15*20
-passIndex db 300 dup('$'),'$';15*20
+ind dw 1 dup(0),'$'
+usersIndex db 400 dup('$'),'$';20*20
+passIndex db 400 dup('$'),'$'
 si_2 dw 1 dup(0),'$'
 noEsId db 10,13, 'NUEVO USUARIO OK' ,10 ,13,'$'
 No_reg db 10,13, 'usuario no registrado' ,10 ,13,'$'
@@ -53,7 +58,7 @@ Barra STRUCT
     px db 0
 Barra ENDS
 barr Barra<'0','0','0'>
-ptsActuales db 0 
+ptsActuales dw 0 
 lev db 0 
 
 ;login
@@ -66,6 +71,12 @@ moverArrobaDS
 menuPrincipal:
     activaModoTexto
     pp bienvenida
+
+; ;=======================
+;     activarModoVideo
+;     call JUGAR
+;     activaModoTexto
+; ;======================
 inicio:
     xor ax,ax
     pp menu
@@ -79,6 +90,12 @@ inicio:
     pp noEsparada
     jmp inicio
 ;subRutinas
+cursor proc ;dh = fila , dl = col 
+MOV ah,02h
+MOV bh,0
+int 10h  
+RET
+cursor endp
 ppBarra proc 
 push ax 
 push bx 
@@ -221,9 +238,43 @@ JMP wait_
 sal_:
 RET
 ModoTieso endP
+
+letrerolvl proc ; di
+        MOV dh,1
+        MOV dl,10    
+        CALL cursor
+        MOV lvl[0],'N'
+        MOV lvl[1],'$'
+        xor ax,ax
+        MOV al,lev[0]
+        add al,48
+        MOV lvlNum[0],al
+        MOV lvlNum[1],'$'
+        pp lvl
+        pp lvlNum
+RET
+letrerolvl endP
+letreroPuntos proc ; di
+        MOV dh,1
+        MOV dl,20  
+        CALL cursor
+        MOV di,ptsActuales
+        call ppNum
+RET
+letreroPuntos endP
+letreroUser proc ; di
+        MOV dh,1
+        MOV dl,1  
+        CALL cursor
+        pp buffUser
+RET
+letreroUser endP
+
 JUGAR PROC 
         MOV once,0
         MOV ptsActuales,0
+        CALL letreroPuntos
+        call letreroUser
         call ppMargen 
         call bloNivel1
         MOV barr.y,160
@@ -256,6 +307,7 @@ JUGAR ENDP
 
 bloNivel1 PROC
     MOV lev,1
+    CALL letrerolvl
     MOV bx,22
     call ppBloques
     MOV bx,36
@@ -272,6 +324,7 @@ bloNivel2 PROC
     call reP2
     MOV bx,50
     call ppBloques 
+    call letrerolvl
 RET
 bloNivel2 ENDP
 bloNivel3 PROC
@@ -283,6 +336,7 @@ bloNivel3 PROC
     call reP3
     MOV bx,64
     call ppBloques
+    call letrerolvl
 RET
 bloNivel3 ENDP
 ppBloques PROC 
@@ -349,6 +403,38 @@ ppClearBlock proc
     pop bx 
 RET
 ppClearBlock endP
+ppNum proc ;di
+limpiaArr bufNum,sizeOF bufNum,36
+PUSH dx
+PUSH ax
+PUSH bx
+PUSH SI
+   MOV ax,di 
+   xor si,si
+   buc:
+   MOV bx,10
+   xor dx,dx
+   DIV bx
+   add dx,48
+   push dx ;guardo residuo 
+        inc si
+        cmp ax,0
+   JNZ buc
+   MOV cx,si
+   xor si,si 
+   i2:
+        pop dx
+        MOV bufNum[si],dl 
+        inc si 
+   loop i2
+   pp bufNum
+   
+POP si
+pop bx 
+POP ax 
+pop dx 
+RET
+ppNum endP 
 ;subRutinas-fin
 ingresar:
     limpiaArr buffUser , sizeOF buffUser , 36
@@ -358,6 +444,7 @@ ingresar:
     pp logIN_
     pp form1 
     getCadena  buffUser
+
     buscaCadena buffUser,usersIndex, idUser
     cmp zero[0],0
     JE ingresar
@@ -367,12 +454,23 @@ ingresar:
     MOV bl,idContra[0]
     cmp idUser[0],bl
     JNE ingresar
+    limpiaArr aux_ , sizeOF aux_ , 36
+    MOV zero[0],0
+    fillAdmin aux_
+    compare buffUser
+    CMP zero[0],1
+    JE soyAdmin
     pp okLogeo
 ;=======================
     activarModoVideo
     call JUGAR
     activaModoTexto
 ;======================
+
+    JMP inicio
+    soyAdmin:
+    Mmenu2 
+    pp linea
     jmp inicio
 registrar:
     limpiaArr buffUser , sizeOF buffUser , 36
