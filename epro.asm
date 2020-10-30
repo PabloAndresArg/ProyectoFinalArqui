@@ -16,10 +16,7 @@ leerChar MACRO
     MOV ah, 01h
     int 21h;la ejecuto 
 endM 
-moverArrobaDS MACRO
-    MOV dx , @data 
-    MOV ds , dx 
-endM
+
 limpiaArr MACRO arreglo ,  len , charClean
 LOCAL bucle 
     PUSH bx 
@@ -214,21 +211,23 @@ activarModoVideo MACRO
     MOV ax,13h
     int 10h 
     mov ax,0A000h
-    MOV ds,ax; DS=A000h activa mem grafics
+    MOV Es,ax; DS=A000h activa mem grafics
 endM  
 activaModoTexto macro
 MOV ax,03h
 int 10h 
-moverArrobaDS
 endM
-
+moverArrobaDS MACRO
+    MOV dx , @data 
+    MOV ds , dx 
+endM
 
 
 pintarBall macro pos,color
 push dx
 MOV di,pos
 MOV dl,color
-MOV [di],dl
+MOV es:[di],dl
 pop dx
 endM 
 

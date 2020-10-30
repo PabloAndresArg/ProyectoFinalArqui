@@ -17,7 +17,6 @@ lvlNum db 1 dup('$'),'$'
 menos  db 10,13,'-','$'
 ln db 10 ,13,'$'
 once dw 1 dup('$'),'$'
-burbuja db 5 dup('$'),'$'
 ;COMPARACION
 aux_ db 20 dup('$'),'$'
 zero db 1 dup('0'),'$'
@@ -49,7 +48,7 @@ pelota STRUCT
     x dw 0
     y dw 0
 pelota ENDS
-pelota1 pelota<'0','0','1'>
+pelota1 pelota<'0','0','0'>
 pelota2 pelota<'0','0','0'>
 pelota3 pelota<'0','0','0'>
 Barra STRUCT
@@ -58,9 +57,12 @@ Barra STRUCT
     px db 0
 Barra ENDS
 barr Barra<'0','0','0'>
-ptsActuales dw 0 
+ptsActuales db 0 
 lev db 0 
-
+PUNTAJES db 25 dup('$'),'$'
+indPuntajes dw 0
+burbuja db 10 dup('$'),'$'
+time dw 0
 ;login
 .code
 leerChar
@@ -72,11 +74,8 @@ menuPrincipal:
     activaModoTexto
     pp bienvenida
 
-; ;=======================
-;     activarModoVideo
-;     call JUGAR
-;     activaModoTexto
-; ;======================
+     call JUGAR
+
 inicio:
     xor ax,ax
     pp menu
@@ -104,11 +103,11 @@ push bx
     MOV ax,si
     add ax,barr.len
     cic:
-    MOV [si],dl
+    MOV es:[si],dl
         mov cx,5
         mov bx,si
         rell:
-        MOV [bx],dl
+        MOV es:[bx],dl
         add bx,320
         loop rell
     inc si
@@ -167,25 +166,25 @@ ppMargen PROC; formula 320*i+j = (i,j)  0 a 319 y de 0 a 199
     MOV dl,95D;color
     MOV di,6405;(20,5) 
     arriba:
-    MOV [di],dl
+    MOV es:[di],dl
     inc di
     cmp di,6714;(20,314)
     JNE arriba
     MOV di,60805;(190,5)
     abajo:
-    MOV [di],dl
+    MOV es:[di],dl
     inc di
     cmp di,61115;(190,315)
     JNE abajo
     MOV di,6405;(20,5)
     izquierda:
-    MOV [di],dl
+    MOV es:[di],dl
     add di,320 ;salta de fila 
     cmp di,60805;(190,5)
     JNE izquierda
     MOV di,6714;(20,314)
     derecha:
-    MOV [di],dl
+    MOV es:[di],dl
     add di,320;salta de fila 
     cmp di,61114;(190,314)
     JNE derecha
@@ -195,7 +194,7 @@ limpiarP PROC
 MOV dl,0h
 MOV di,32006;(100,6) 
 lim:
-MOV [di],dl
+MOV es:[di],dl
 inc di 
 cmp di,61112;(190,312)
 JBE lim
@@ -243,8 +242,6 @@ letrerolvl proc ; di
         MOV dh,1
         MOV dl,10    
         CALL cursor
-        MOV lvl[0],'N'
-        MOV lvl[1],'$'
         xor ax,ax
         MOV al,lev[0]
         add al,48
@@ -254,27 +251,39 @@ letrerolvl proc ; di
         pp lvlNum
 RET
 letrerolvl endP
-letreroPuntos proc ; di
+letreroPuntos proc 
         MOV dh,1
         MOV dl,20  
         CALL cursor
-        MOV di,ptsActuales
+        xor ax,ax
+        mov AL,ptsActuales  
         call ppNum
 RET
 letreroPuntos endP
-letreroUser proc ; di
+letreroUser proc 
         MOV dh,1
         MOV dl,1  
         CALL cursor
         pp buffUser
 RET
 letreroUser endP
+letrerotime proc 
+        MOV dh,1
+        MOV dl,30  
+        CALL cursor
+        MOV ax,time
+        CALL ppNum 
+RET
+letrerotime endP
 
 JUGAR PROC 
+        activarModoVideo
+        mov time,0
         MOV once,0
         MOV ptsActuales,0
         CALL letreroPuntos
         call letreroUser
+        call letrerotime
         call ppMargen 
         call bloNivel1
         MOV barr.y,160
@@ -286,6 +295,8 @@ JUGAR PROC
         MOV pelota1.y,130;Rapido
         call ModoTieso
         encicla:
+            inc time
+            call letrerotime
             subMenu
             delay               vel 
             verificaState       pelota1
@@ -302,6 +313,11 @@ JUGAR PROC
             con:  
         jmp encicla
         END_GAME:
+        leerChar
+        activaModoTexto
+        MOV si,indPuntajes
+       ; MOV PUNTAJES[si],
+        INC indPuntajes
 RET
 JUGAR ENDP
 
@@ -355,7 +371,7 @@ PUSH si
         mov cx,8
         mov bx,si
         fill:
-        MOV [bx],dl
+        MOV es:[bx],dl
         add bx,320
         loop fill
         inc si
@@ -392,7 +408,7 @@ ppClearBlock proc
             mov cx,8
             mov bx,si
             r_:
-            MOV [bx],dl
+            MOV es:[bx],dl
             add bx,320
             loop r_
             inc si
@@ -403,13 +419,12 @@ ppClearBlock proc
     pop bx 
 RET
 ppClearBlock endP
-ppNum proc ;di
+ppNum proc ;AX= 16 bits sino xor ah,ah y al = 8bits
 limpiaArr bufNum,sizeOF bufNum,36
 PUSH dx
 PUSH ax
 PUSH bx
 PUSH SI
-   MOV ax,di 
    xor si,si
    buc:
    MOV bx,10
@@ -428,7 +443,6 @@ PUSH SI
         inc si 
    loop i2
    pp bufNum
-   
 POP si
 pop bx 
 POP ax 
@@ -462,9 +476,7 @@ ingresar:
     JE soyAdmin
     pp okLogeo
 ;=======================
-    activarModoVideo
     call JUGAR
-    activaModoTexto
 ;======================
 
     JMP inicio
