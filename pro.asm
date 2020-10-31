@@ -3,6 +3,16 @@ include epro.asm
 .model small
 .stack 
 .data
+;ARHIVOS
+ManejadorRuta dw ? ;para archivos
+userstxt db 'users.txt','$',00h
+estadistxt db 'estadis.txt','$',00h
+errorArchivo db 10,13, 'ERROR ARCHIVO' ,10 ,13,'$'
+errorLectura db 10,13, 'ERROR LECTURA' ,10 ,13,'$'
+bufferLector db 700 dup('$')
+punto db '.' 
+puntoC db ';'
+;ARCHIVOS
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
 menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
 menu3 db 10,13,'1) BubbleSort',10,13,'2) QuickSort',10,13,'3) ShellSort',10,13,'4) SALIR',10,13,'Entrada:$'
@@ -17,27 +27,29 @@ lvlNum db 1 dup('$'),'$'
 menos  db 10,13,'-','$'
 ln db 10 ,13,'$'
 once dw 1 dup('$'),'$'
+contImp dw 1 dup(0),'$'
 ;COMPARACION
 aux_ db 20 dup('$'),'$'
 zero db 1 dup('0'),'$'
-idUser  db 1 dup('0'),'$'
-idContra  db 1 dup('0'),'$'
+okLogIN  db 1 dup('0'),'$'
+vacio db ' ','$'
 ;COMPARACION 
 ;login
+dosP db ':','$'
+min db 0
+segundos db 0 
+hora db '0 : ','$'
 lvl db 'LVL','$'
 mIguales db 10,13, 'OK iguales','$'
-buffUser  db 20 dup('$'),'$'
-buffPass  db 20 dup('$'),'$'
-ind dw 1 dup(0),'$'
+buffUser  db 20 dup('$'),'$'; NO BORRAR 
+buffPass  db 20 dup('$'),'$'; NO BORRAR
 usersIndex db 400 dup('$'),'$';20*20
-passIndex db 400 dup('$'),'$'
-si_2 dw 1 dup(0),'$'
-noEsId db 10,13, 'NUEVO USUARIO OK' ,10 ,13,'$'
-No_reg db 10,13, 'usuario no registrado' ,10 ,13,'$'
+No_reg db 10,13, 'ALGO NO COINCIDE' ,10 ,13,'$'
 logIN_ db 10,13, '** LOGIN **' ,10 ,13,'$'
 okReg db 10,13, 'OK REGISTRADO..' ,10 ,13,'$'
 linea db 10,13, '--' ,10 ,13,'$'
 okLogeo db 10,13, 'ACCESO PERMITIDO' ,10 ,13,'$'
+
 passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
 bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' ; databyte porque el ascii va de 0 a 255  el $ indica hasta donde tiene que imprimir
 contpp dw 0
@@ -59,23 +71,21 @@ Barra ENDS
 barr Barra<'0','0','0'>
 ptsActuales db 0 
 lev db 0 
-PUNTAJES db 25 dup('$'),'$'
-indPuntajes dw 0
-burbuja db 10 dup('$'),'$'
 time dw 0
-;login
+;ORDENAMIENTOS
+buffIds db 245 dup('$'),'$';7*35   los primeros 80 son el top 10 
+buffTimes  db 35 dup('$'),'$'
+buffLevel  db 35 dup('$'),'$'
+buffPuntajes  db 35 dup('$'),'$'
+id_ dw 0
+burbuja db 10 dup('$'),'$'
 .code
 leerChar
 moverArrobaDS
-    limpiaArr usersIndex , sizeOF usersIndex , 36
-    limpiaArr passIndex , sizeOF passIndex , 36 
-    InitPassAdmin
+
 menuPrincipal:
     activaModoTexto
     pp bienvenida
-
-     call JUGAR
-
 inicio:
     xor ax,ax
     pp menu
@@ -89,6 +99,59 @@ inicio:
     pp noEsparada
     jmp inicio
 ;subRutinas
+saveUser proc ;aux_
+    PUSH ax
+    push SI
+    push bx 
+    xor ax,ax 
+    xor si,si
+    xor bx,bx
+        MOV si,id_
+        mov al,7
+        mul si
+        MOV si,ax;ax bits menos significativos
+        ssave:
+            MOV al,aux_[bx]
+            MOV buffIds[si],al
+            cmp aux_[bx],36
+            JE outSave 
+            inc si
+            inc bx
+        JMP ssave
+        outSave:
+        pop bx 
+        POP SI
+        pop ax 
+    RET 
+saveUser endp
+ppArcNum proc ;ax
+   limpiaArr bufNum, sizeOf bufNum, 36
+   PUSH dx
+   PUSH ax
+   PUSH bx
+   PUSH SI
+   xor si,si
+   buc:
+   MOV bx,10
+   xor dx,dx
+   DIV bx
+   add dx,48
+   push dx ;guardo residuo 
+        inc si
+        cmp ax,0
+   JNZ buc
+   MOV cx,si 
+    i2_:
+        pop dx
+        MOV bufNum[0],dl;no save es una aux 
+        wrOk bufNum  
+    loop i2_
+   POP si
+   pop bx 
+   POP ax 
+   pop dx
+RET 
+ppArcNum endp
 cursor proc ;dh = fila , dl = col 
 MOV ah,02h
 MOV bh,0
@@ -130,7 +193,6 @@ moveBarraD PROC
     exD:
 RET
 moveBarraD ENDP
-
 moveBarraI PROC
     mov ax,barr.y
     sub ax,4
@@ -155,7 +217,7 @@ pausar PROC
     cmp al,1bH;esc
     JE salidaG
     cmp al,32
-    JE menuPrincipal 
+    JE END_game2 
     JMP nadaG
     salidaG:
     mov si,0 
@@ -237,7 +299,6 @@ JMP wait_
 sal_:
 RET
 ModoTieso endP
-
 letrerolvl proc ; di
         MOV dh,1
         MOV dl,10    
@@ -268,17 +329,44 @@ letreroUser proc
 RET
 letreroUser endP
 letrerotime proc 
+    PUSH ax 
         MOV dh,1
-        MOV dl,30  
+        MOV dl,28  
         CALL cursor
-        MOV ax,time
-        CALL ppNum 
+        pp hora
+        MOV ax,vel
+        sub ax,30
+        cmp time,ax
+        JAE incre
+        JMP sigue
+incre:
+        inc segundos
+        MOV time,0
+        cmp segundos,60 
+        JAE incre2
+        JMP sigue
+incre2:
+        MOV segundos,0
+        inc min
+        sigue:
+        xor ax,ax
+        MOV al,min
+        CALL ppNum
+        PP vacio
+        pp dosP
+        xor ax,ax
+        MOV al,segundos
+        CALL ppNum
+        PP vacio
+pop ax 
 RET
 letrerotime endP
 
 JUGAR PROC 
         activarModoVideo
         mov time,0
+        MOV segundos,0
+        MOV min,0
         MOV once,0
         MOV ptsActuales,0
         CALL letreroPuntos
@@ -286,13 +374,13 @@ JUGAR PROC
         call letrerotime
         call ppMargen 
         call bloNivel1
-        MOV barr.y,160
+        MOV barr.y,190
         MOV barr.len,100
         MOV barr.px,14
         call ppBarra
-        MOV vel,220;220
+        MOV vel,175;175
         call reP1
-        MOV pelota1.y,130;Rapido
+        MOV pelota1.y,135;Rapido
         call ModoTieso
         encicla:
             inc time
@@ -313,11 +401,7 @@ JUGAR PROC
             con:  
         jmp encicla
         END_GAME:
-        leerChar
-        activaModoTexto
-        MOV si,indPuntajes
-       ; MOV PUNTAJES[si],
-        INC indPuntajes
+
 RET
 JUGAR ENDP
 
@@ -333,7 +417,7 @@ bloNivel1 ENDP
 
 bloNivel2 PROC
     call bloNivel1
-    MOV vel,185;185
+    MOV vel,165;165
     MOV lev,2
     call reP1
     MOV pelota2.estado,5
@@ -345,7 +429,7 @@ RET
 bloNivel2 ENDP
 bloNivel3 PROC
     call bloNivel2
-    MOV vel,160;175
+    MOV vel,155;155
     MOV lev,3
     call reP1
     call reP2
@@ -454,51 +538,51 @@ ingresar:
     limpiaArr buffUser , sizeOF buffUser , 36
     limpiaArr buffPass , sizeOF buffPass , 36 
     MOV zero[0],0
-
+    MOV okLogIN[0],0
     pp logIN_
     pp form1 
     getCadena  buffUser
-
-    buscaCadena buffUser,usersIndex, idUser
-    cmp zero[0],0
-    JE ingresar
     pp form2
     getCadena  buffPass
-    buscaCadena buffPass,passIndex ,idContra
-    MOV bl,idContra[0]
-    cmp idUser[0],bl
+    limpiaArr bufferLector,sizeOF bufferLector,36
+    AbrirArchivo userstxt,ManejadorRuta
+    LeerArchivo ManejadorRuta,bufferLector,SIZEOF bufferLector
+    validaLogin buffUser,buffPass,bufferLector
+    cmp okLogIN[0],1
     JNE ingresar
-    limpiaArr aux_ , sizeOF aux_ , 36
-    MOV zero[0],0
+    pp okLogeo
+    leerChar
     fillAdmin aux_
     compare buffUser
     CMP zero[0],1
     JE soyAdmin
-    pp okLogeo
 ;=======================
     call JUGAR
+END_game2:
+    leerChar
+    activaModoTexto
+    saveEstadis
 ;======================
-
     JMP inicio
     soyAdmin:
+    limpiaArr bufferLector,sizeOF bufferLector,36
+    AbrirArchivo estadistxt,ManejadorRuta
+    LeerArchivo ManejadorRuta,bufferLector,SIZEOF bufferLector
+    leerEstadis bufferLector
     Mmenu2 
     pp linea
     jmp inicio
 registrar:
     limpiaArr buffUser , sizeOF buffUser , 36
     limpiaArr buffPass , sizeOF buffPass , 36  
-    MOV zero[0],0
     pp ln
     pp form1 
     getCadena  buffUser 
-    UserNoRep buffUser,usersIndex 
-    
 pedirPass:
     pp form2
     getCadena  buffPass
     validarPass buffPass
-    saveCadena  buffPass,passIndex
-    inc ind[0]
+    saveCadena  buffUser,buffPass
     pp linea
     pp okReg
     pp linea
