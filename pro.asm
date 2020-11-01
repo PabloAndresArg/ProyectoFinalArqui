@@ -7,15 +7,19 @@ include epro.asm
 ManejadorRuta dw ? ;para archivos
 userstxt db 'users.txt','$',00h
 estadistxt db 'estadis.txt','$',00h
+repPuntos db 'Puntos.rep','$',00h
+repTime db 'Tiempo.rep','$',00h
 errorArchivo db 10,13, 'ERROR ARCHIVO' ,10 ,13,'$'
 errorLectura db 10,13, 'ERROR LECTURA' ,10 ,13,'$'
 bufferLector db 700 dup('$')
 punto db '.' 
 puntoC db ';'
+ese db 's'
 ;ARCHIVOS
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
 menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
 menu3 db 10,13,'1) BubbleSort',10,13,'2) QuickSort',10,13,'3) ShellSort',10,13,'4) SALIR',10,13,'Entrada:$'
+menuOrder db 10,13,'1) ASCENDENTE',10,13,'2) DESCENDENTE',10,13,'Entrada:$'
 noEsparada db 10,13,'Entrada no esperada',10,13,'$'
 repetido db 10,13,'EL usuario : ' ,'$'
 yaenUso db ' YA ESTA EN USO',10,13,'$'
@@ -25,16 +29,17 @@ form2 db 10,13,'Pass: ','$'
 bufNum db 7 dup('$'),'$'
 lvlNum db 1 dup('$'),'$'
 menos  db 10,13,'-','$'
+;SEPARADORES
 ln db 10 ,13,'$'
+tab db 9,9,9,'$'
+tabF db 9,9,9
+lnF db 10,13
 once dw 1 dup('$'),'$'
 contImp dw 1 dup(0),'$'
-;COMPARACION
 aux_ db 20 dup('$'),'$'
 zero db 1 dup('0'),'$'
 okLogIN  db 1 dup('0'),'$'
 vacio db ' ','$'
-;COMPARACION 
-;login
 dosP db ':','$'
 min db 0
 segundos db 0 
@@ -49,9 +54,12 @@ logIN_ db 10,13, '** LOGIN **' ,10 ,13,'$'
 okReg db 10,13, 'OK REGISTRADO..' ,10 ,13,'$'
 linea db 10,13, '--' ,10 ,13,'$'
 okLogeo db 10,13, 'ACCESO PERMITIDO' ,10 ,13,'$'
-
+line  db 10,13,'--------------------------------------------------------------------------------',10,13,'$'; NO BORRAR
+lineF  db 10,13,'--------------------------------------------------------------------------------',10,13
+topP db 9,9,9,9,'TOP 10 PUNTOS',10,13,'$'
+topT db 9,9,9,9,'TOP 10 TIEMPO',10,13,'$'
 passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
-bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' ; databyte porque el ascii va de 0 a 255  el $ indica hasta donde tiene que imprimir
+bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' 
 contpp dw 0
 BarraInicio dw 1 dup('0'),'$'
 vel dw 0  
@@ -78,7 +86,9 @@ buffTimes  db 35 dup('$'),'$'
 buffLevel  db 35 dup('$'),'$'
 buffPuntajes  db 35 dup('$'),'$'
 id_ dw 0
+
 burbuja db 10 dup('$'),'$'
+
 .code
 leerChar
 moverArrobaDS
@@ -124,6 +134,79 @@ saveUser proc ;aux_
         pop ax 
     RET 
 saveUser endp
+
+
+changeUser proc ;dh dl aux_  
+push si
+push bx
+        xor ax,ax
+        mov al,7
+        mul bx
+push di
+        MOV di,ax
+        mov cx,7
+        xor bx,bx
+        getU1:
+            MOV al,buffIds[di]
+            MOV aux_[bx],al
+            inc bx
+            inc di
+            loop getU1
+pop di
+        ;aux ya tiene lo de user1     
+ pop bx 
+ push bx; lo guardo de nuevo
+        xor ax,ax
+        mov al,7
+        mul bx
+        MOV bx,ax
+        xor ax,ax
+        mov al,7
+        mul si
+        MOV si,ax
+        mov cx,7
+         setU1: 
+             MOV al,buffIds[si]
+             MOV buffIds[bx],al
+             inc bx
+             inc si
+             loop setU1
+ pop bx
+ pop si 
+ push si ;lo vuelvo a guardar
+ push bx 
+        xor ax,ax
+        mov al,7
+        mul si
+        MOV si,ax
+        mov cx,7
+        xor bx,bx
+        setU2:  
+            MOV al,aux_[bx]
+            MOV buffIds[si],al
+            inc bx
+            inc si
+            loop setU2
+pop bx 
+pop si 
+RET
+changeUser endP 
+printUser proc ;di
+    limpiaArr aux_,sizeOF aux_,36
+    push cx
+    push bx 
+    mov cx,7
+    xor bx,bx 
+    getU:
+    MOV al,buffIds[di]
+    MOV aux_[bx],al
+    inc bx
+    inc di
+    loop getU 
+    pop bx 
+    pop cx 
+RET
+printUser endP
 ppArcNum proc ;ax
    limpiaArr bufNum, sizeOf bufNum, 36
    PUSH dx
@@ -542,8 +625,11 @@ ingresar:
     pp logIN_
     pp form1 
     getCadena  buffUser
+   PASS_LOGIN: 
     pp form2
     getCadena  buffPass
+    validarPassLogin buffPass
+
     limpiaArr bufferLector,sizeOF bufferLector,36
     AbrirArchivo userstxt,ManejadorRuta
     LeerArchivo ManejadorRuta,bufferLector,SIZEOF bufferLector
@@ -564,14 +650,20 @@ END_game2:
     saveEstadis
 ;======================
     JMP inicio
-    soyAdmin:
-    limpiaArr bufferLector,sizeOF bufferLector,36
+soyAdmin:
+MOV id_,0
+limpiaArr bufferLector,sizeOF bufferLector,36
+limpiaArr buffLevel,sizeOF buffLevel,36
+limpiaArr buffIds,sizeOF buffIds,36
+limpiaArr buffTimes,sizeOF buffTimes,36
+limpiaArr buffPuntajes,sizeOF buffPuntajes,36
     AbrirArchivo estadistxt,ManejadorRuta
     LeerArchivo ManejadorRuta,bufferLector,SIZEOF bufferLector
     leerEstadis bufferLector
+menuAdmin:
     Mmenu2 
-    pp linea
-    jmp inicio
+    pp ln 
+jmp menuAdmin
 registrar:
     limpiaArr buffUser , sizeOF buffUser , 36
     limpiaArr buffPass , sizeOF buffPass , 36  

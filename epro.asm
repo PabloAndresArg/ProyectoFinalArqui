@@ -26,6 +26,7 @@ ok:
 endM
 wr MACRO cade
     LOCAL err , ok 
+    PUSH bx
     MOV AH,40h
     MOV BX,ManejadorRuta
     MOV CX,sizeOf cade
@@ -36,6 +37,7 @@ wr MACRO cade
     err: 
         pp errorArchivo
     ok: 
+    pop bx 
 endM
 crearFichero MACRO ArrayName,Manejador,errorArchivo
   local err,salidaExito
@@ -66,6 +68,7 @@ wrOk MACRO cade
 PUSH cx
 PUSH ax
 PUSH bx 
+PUSH si 
     contarCad cade
     MOV AH,40h
     MOV BX,ManejadorRuta
@@ -77,6 +80,7 @@ PUSH bx
     err: 
         pp errorArchivo
     ok:
+pop si
 POP bx 
 pop ax 
 pop cx
@@ -262,7 +266,33 @@ inc si
 JMP recorre
 error_:
 pp passOnlyNum
+
 JMP pedirPass
+ex:
+pop si 
+endM 
+
+
+validarPassLogin macro entrada
+local recorre,ex,error_,v1_,v2_
+push si
+xor si,si 
+recorre:
+cmp entrada[si],36
+JE ex
+cmp entrada[si],48;0
+JAE v1_
+JMP error_
+        v1_:
+            cmp entrada[si],57
+            JBE v2_
+            JMP error_
+v2_:
+inc si 
+JMP recorre
+error_:
+pp passOnlyNum
+JMP PASS_LOGIN
 ex:
 pop si 
 endM 
@@ -603,18 +633,15 @@ push ax
         MOV vel,165
         JMP nada
     nada:
-
 pop ax
 pop bx
 endM 
-
 subMenu MACRO
 LOCAL der,izq,nada,pausa
 xor ax,ax 
     MOV ah,11h
     int 16h
-    JZ nada
-    ; pregunta estado buffer 
+    JZ nada;pregunta estado buffer 
     xor ax,ax
     MOV ah,00
     int 16h  
@@ -638,10 +665,6 @@ xor ax,ax
     JNZ pausa
 nada:
 endM 
-
-
-
-
 rebote MACRO  izq,der,Arriba,abajo,ball
     local left,rigth,up,down,ex,s1,s2,s3,s4
     cmp ball.y,izq
@@ -703,30 +726,6 @@ MOV var[4], 6Eh;n
 MOV var[5], 62h;b
 MOV var[6], 70h;p
 endM 
-
-Mmenu2 macro 
-    LOCAL ex
-    pp menu2
-    m2:
-    leerChar
-    cmp al,49
-    JE top1
-    cmp al,50
-    JE top2
-    cmp al,51
-    JE inicio
-    pp noEsparada
-    jmp m2
-    top1:
-    pp presiona32
-    leerChar
-    JMP ex
-    top2:
-    pp presiona32
-    leerChar
-    ex:
-endM
-
 validaLogin macro buffUser , buffPass  , ent
 LOCAL s0,s1,s2,s3,s4,ex,NO_IMPORT,sig,no
 xor si,si
@@ -856,7 +855,6 @@ s2:;numeros
     JMP recursiveNum
 s3:;LVL O PUNTO
     inc di ; segun di me voy a guardar a respectivo lugar
-    pp ln 
     MOV bx,id_
     inc si
     cmp di,2
@@ -874,16 +872,257 @@ s4:;TIME
     limpiaArr aux_,sizeOF aux_,36
     MOV di,0
     MOV bx,0
-    pp linea
-    pp buffUser
-    pp ln 
-    pp buffLevel
-    pp ln 
-    pp buffPuntajes
-    pp ln
-    pp buffTimes
-    pp linea
     JMP s0
 ex:
 endm
 
+printTop10Puntos macro vec
+LOCAL con,IMP,only10,normal
+cmp id_,11 
+JB normal
+JMP only10
+normal:
+MOV bx,id_
+JMP con 
+only10:
+MOV bx,10
+con: 
+xor si,si 
+IMP: 
+    MOV ax,si
+    INC ax
+    CALL ppNum
+    ppChar punto
+    pp tab
+    xor ax,ax
+    mov al,7
+    mul si
+    MOV di,ax
+    CALL printUser
+    pp aux_
+    pp tab
+    xor ax,ax  
+    mov al,buffLevel[si]
+    CALL ppNum 
+    pp tab 
+    XOR ax,ax 
+    MOV al,vec[si]
+    call ppNum
+    inc si 
+    pp  ln
+    cmp si,bx
+    JNE IMP 
+endM 
+printTop10Times macro vec
+LOCAL con,IMP,only10,normal
+cmp id_,11 
+JB normal
+JMP only10
+normal:
+MOV bx,id_ 
+JMP con 
+only10:
+MOV bx,10
+con:
+xor si,si 
+IMP: 
+    MOV ax,si
+    INC ax
+    CALL ppNum
+    ppChar punto
+    pp tab
+    xor ax,ax
+    mov al,7
+    mul si
+    MOV di,ax
+    CALL printUser
+    pp aux_
+    pp tab
+    xor ax,ax  
+    mov al,buffLevel[si]
+    CALL ppNum 
+    pp tab 
+    XOR ax,ax 
+    MOV al,vec[si]
+    call ppNum
+    ppChar 's'
+    inc si 
+    pp  ln
+    cmp si,bx
+    JNE IMP 
+endM 
+
+Mmenu2 macro 
+    LOCAL ex
+    pp menu2
+    m2:
+    leerChar
+    cmp al,49
+    JE top1
+    cmp al,50
+    JE top2
+    cmp al,51
+    JE inicio
+    pp noEsparada
+    jmp m2
+    top1:;puntos
+        pp line 
+        pp topP
+        pp line 
+        mov DI,0
+        sortBurbuja buffPuntajes , DI
+        printTop10Puntos buffPuntajes
+        ReporteTopPuntaje buffPuntajes 
+        pp line 
+        pp presiona32
+        leerChar
+    JMP ex
+    top2:;tiempo
+        pp line 
+        pp topT
+        pp line 
+        mov DI,0
+        sortBurbuja buffTimes,DI
+        printTop10Times buffTimes
+        ReporteTopTime buffTimes
+        pp line 
+        leerChar
+        pp presiona32
+    ex:
+endM
+
+sortBurbuja MACRO arreglo,tipo ; di para saber si es asc o desc
+LOCAL while1,while2,asc_, salida, salidita,continuar,cambia
+    xor bx,bx
+    xor ax,ax
+    xor dx,dx  
+    MOV dx,id_;indice recorrerdor 
+    while1:
+            cmp bx,dx;sale si llega al ultimo
+            JNB salida
+            MOV si,bx
+            INC si
+            while2:
+                cmp si,dx;sale si llega al ultimo
+                JNB salidita
+                MOV cl,arreglo[bx];a[i]
+                cmp tipo,1
+                JE asc_ 
+                    cmp cl,arreglo[si];a[j]
+                    JB cambia
+                    JMP continuar
+                    asc_:
+                    cmp cl,arreglo[si];a[j]
+                    JA cambia
+                continuar:
+                INC si
+            JMP while2
+        salidita:
+        INC bx
+    JMP while1
+    cambia:
+    push dx
+    MOV cl,buffTimes[bx]
+    MOV ch,buffTimes[si]
+    MOV dl,buffLevel[bx]
+    MOV dh,buffLevel[si]
+    MOV al,buffPuntajes[bx]
+    MOV ah,buffPuntajes[si]
+    MOV buffPuntajes[bx],ah
+    MOV buffPuntajes[si],al
+    MOV buffLevel[bx],dh
+    MOV buffLevel[si],dl
+    MOV buffTimes[bx],ch
+    MOV buffTimes[si],cl
+    CALL changeUser
+    pop dx
+    JMP continuar
+    salida:
+endM 
+ReporteTopPuntaje macro vec
+LOCAL con,IMP,only10,normal
+crearFichero repPuntos,ManejadorRuta,errorArchivo
+wr lineF
+wrOk topP
+wr lineF
+cmp id_,11 
+JB normal
+JMP only10
+normal:
+MOV bx,id_
+JMP con 
+only10:
+MOV bx,10
+con: 
+xor si,si 
+IMP: 
+    MOV ax,si
+    INC ax
+    CALL ppArcNum
+    wr punto
+    wr tabF
+    xor ax,ax
+    mov al,7
+    mul si
+    MOV di,ax
+    CALL printUser
+    wrOk aux_
+    wr tabF
+    xor ax,ax  
+    mov al,buffLevel[si]
+    CALL ppArcNum 
+    wr tabF
+    XOR ax,ax 
+    MOV al,vec[si]
+    call ppArcNum
+    inc si 
+    wr  lnF
+    cmp si,bx
+JNE IMP 
+    wr lineF  
+CerrarArchivo ManejadorRuta
+endM
+ReporteTopTime macro vec
+LOCAL con,IMP,only10,normal
+crearFichero repTime,ManejadorRuta,errorArchivo
+wr lineF
+wrOk topP
+wr lineF
+cmp id_,11 
+JB normal
+JMP only10
+normal:
+MOV bx,id_
+JMP con 
+only10:
+MOV bx,10
+con: 
+xor si,si 
+IMP: 
+    MOV ax,si
+    INC ax
+    CALL ppArcNum
+    wr punto
+    wr tabF
+    xor ax,ax
+    mov al,7
+    mul si
+    MOV di,ax
+    CALL printUser
+    wrOk aux_
+    wr tabF
+    xor ax,ax  
+    mov al,buffLevel[si]
+    CALL ppArcNum 
+    wr tabF
+    XOR ax,ax 
+    MOV al,vec[si]
+    call ppArcNum
+    inc si
+    wr ese 
+    wr  lnF
+    cmp si,bx
+JNE IMP 
+    wr lineF  
+CerrarArchivo ManejadorRuta
+endM
