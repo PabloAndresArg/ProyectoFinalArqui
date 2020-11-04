@@ -15,6 +15,7 @@ bufferLector db 700 dup('$')
 punto db '.' 
 puntoC db ';'
 ese db 's'
+Ascii32 db 32
 ;ARCHIVOS
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
 menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
@@ -86,11 +87,23 @@ buffTimes  db 35 dup('$'),'$'
 buffLevel  db 35 dup('$'),'$'
 buffPuntajes  db 35 dup('$'),'$'
 id_ dw 0
-
-burbuja db 10 dup('$'),'$'
-
+auxP dw 0 
+;graficardora 
+AuxTop  db 10 dup('$'),'$'
+msgMayor db 10,13, 'MAYOR: ','$'
+mayor db 0
+max db 0 
+lenTop dw 0
+tiempo dw 500
+cantidad db 0b
+anchuraY dw 0
+espacio  db 0b
+entreBarras dw 0b
+espacioTotBarra dw 0
+relativPos dw 0 
+alturaX db 20
+;graficadora
 .code
-leerChar
 moverArrobaDS
 
 menuPrincipal:
@@ -191,6 +204,21 @@ pop bx
 pop si 
 RET
 changeUser endP 
+
+DeterminaCantidad proc
+    cmp id_,11 
+    JB normal
+    JMP only10
+    normal:
+    MOV bx,id_
+    JMP exit_1 
+    only10:
+    MOV bx,10
+    exit_1: 
+    MOV lenTop,bx
+RET
+DeterminaCantidad endP 
+
 printUser proc ;di
     limpiaArr aux_,sizeOF aux_,36
     push cx

@@ -877,16 +877,8 @@ ex:
 endm
 
 printTop10Puntos macro vec
-LOCAL con,IMP,only10,normal
-cmp id_,11 
-JB normal
-JMP only10
-normal:
-MOV bx,id_
-JMP con 
-only10:
-MOV bx,10
-con: 
+LOCAL IMP
+CALL DeterminaCantidad;cambia bx 
 xor si,si 
 IMP: 
     MOV ax,si
@@ -914,16 +906,8 @@ IMP:
     JNE IMP 
 endM 
 printTop10Times macro vec
-LOCAL con,IMP,only10,normal
-cmp id_,11 
-JB normal
-JMP only10
-normal:
-MOV bx,id_ 
-JMP con 
-only10:
-MOV bx,10
-con:
+LOCAL IMP
+CALL DeterminaCantidad;cambia bx
 xor si,si 
 IMP: 
     MOV ax,si
@@ -973,6 +957,10 @@ Mmenu2 macro
         sortBurbuja buffPuntajes , DI
         printTop10Puntos buffPuntajes
         ReporteTopPuntaje buffPuntajes 
+        activarModoVideo
+        graficadora  AuxTop
+        leerChar
+        activaModoTexto
         pp line 
         pp presiona32
         leerChar
@@ -985,6 +973,10 @@ Mmenu2 macro
         sortBurbuja buffTimes,DI
         printTop10Times buffTimes
         ReporteTopTime buffTimes
+        activarModoVideo
+        graficadora  AuxTop
+        leerChar
+        activaModoTexto
         pp line 
         leerChar
         pp presiona32
@@ -992,7 +984,7 @@ Mmenu2 macro
 endM
 
 sortBurbuja MACRO arreglo,tipo ; di para saber si es asc o desc
-LOCAL while1,while2,asc_, salida, salidita,continuar,cambia
+LOCAL while1,while2,asc_,salida,salidita,continuar,cambia
     xor bx,bx
     xor ax,ax
     xor dx,dx  
@@ -1038,22 +1030,34 @@ LOCAL while1,while2,asc_, salida, salidita,continuar,cambia
     pop dx
     JMP continuar
     salida:
+    limpiaArr AuxTop,sizeOF AuxTop,36
+    CALL DeterminaCantidad 
+    pusheaTop arreglo
+    popeaTop  AuxTop
+    calculaMayor arreglo
 endM 
+ppNumeros macro array
+ LOCAL IMP 
+ push si 
+ xor si,si  
+ IMP:
+    xor ax,ax
+    MOV al,array[si]
+    CALL ppNum
+    ppChar Ascii32
+    inc si 
+    CMP si,lenTop
+    JNE IMP 
+ pop si 
+endM 
+
 ReporteTopPuntaje macro vec
-LOCAL con,IMP,only10,normal
+LOCAL con,IMP
 crearFichero repPuntos,ManejadorRuta,errorArchivo
 wr lineF
 wrOk topP
 wr lineF
-cmp id_,11 
-JB normal
-JMP only10
-normal:
-MOV bx,id_
-JMP con 
-only10:
-MOV bx,10
-con: 
+CALL DeterminaCantidad;cambia bx
 xor si,si 
 IMP: 
     MOV ax,si
@@ -1083,20 +1087,12 @@ JNE IMP
 CerrarArchivo ManejadorRuta
 endM
 ReporteTopTime macro vec
-LOCAL con,IMP,only10,normal
+LOCAL IMP
 crearFichero repTime,ManejadorRuta,errorArchivo
 wr lineF
-wrOk topP
+wrOk topT
 wr lineF
-cmp id_,11 
-JB normal
-JMP only10
-normal:
-MOV bx,id_
-JMP con 
-only10:
-MOV bx,10
-con: 
+CALL DeterminaCantidad;cambia bx
 xor si,si 
 IMP: 
     MOV ax,si
@@ -1125,4 +1121,288 @@ IMP:
 JNE IMP 
     wr lineF  
 CerrarArchivo ManejadorRuta
+endM
+
+pusheaTop macro arreglo
+LOCAL inicio, fin
+xor si,si 
+inicio: 
+    xor ax,ax
+    cmp si,lenTop;longitud
+    JE FIN  
+    MOV al,arreglo[si]
+    PUSH ax
+    INC si 
+    JMP inicio
+fin:
+endM
+popeaTop macro arreglo
+LOCAL inicio,fin
+xor si,si 
+mov si,lenTop;longitud 
+dec si
+inicio: 
+    cmp si,0
+    Jl fin
+    pop ax
+    mov arreglo[si],al
+    dec si
+    JMP inicio
+fin:
+endM 
+calculaMayor macro arreglo
+    LOCAL recorriendo, ex , cambia , con
+    push ax
+    PUSH bx 
+        xor bx,bx
+        xor ax,ax
+        MOV mayor,0
+        recorriendo:
+        MOV al,arreglo[bx]
+        cmp mayor,al;MAYOR<al
+        JB cambia
+        con:
+        cmp bx,lenTop
+        JE ex
+        inc bx 
+        JMP recorriendo
+    cambia:
+    MOV mayor,al
+    JMP con
+    ex:
+POP bx
+pop ax 
+endM 
+determinarAnchura macro anchuraY , espacio
+    PUSH dx
+    MOV ax,312  ; TAMAÑO HORIZONTAL 312
+    xor dx,dx
+    MOV bx,lenTop
+    xor bh,bh
+    DIV bl;res en al total para cada barra
+
+    xor dx,dx
+    mov dl,al ; ax al cociente ah residuo
+    MOV espacioTotBarra,dx  ; espacioTotal
+    
+    xor bh,bh
+    xor ah,ah
+    mov bl,25;multiplico el cociente por 25
+    mul bl;res ax
+    MOV bl,100;PORCENTAJE 
+    xor dx,dx 
+    div bl ;res en al
+
+    MOV espacio,al 
+    MOV bx,espacioTotBarra
+    sub bl,espacio;tamanio sobrante de barra 
+    ;bx = espacio para barra
+    MOV anchuraY,bx
+    pop dx
+endM 
+
+determinarAltura macro alturaX,mayor
+push si 
+push bx 
+push dx
+push ax
+    xor ax,ax
+    MOV al,alturaX 
+    MOV bl,168; espacio total para graficar
+    mul bl
+    ;res en ax 
+    xor dh,dh 
+    MOV dl,mayor ; la miultiplicacion dentro del mayor 
+    div dl 
+    ;res en al
+    mov dl,190
+    sub dl,al
+    mov alturaX,dl;alturaX
+pop ax
+pop dx
+pop bx
+pop si 
+endM
+BarraPrint macro anchuraY,alturaX,espacio,color
+LOCAL izq,arriba,der
+PUSH si 
+PUSH di
+push ax 
+push bx
+    xor si,si
+    xor di,di 
+    ;get altura 
+    xor ah,ah 
+    MOV al,alturaX
+    MOV di,ax
+   
+    ;1
+    getPos di,relativPos;si pos final
+    MOV di,si 
+    ;2
+    getPos 190,relativPos;si 
+    ;pinto linea arriba 
+    izq:
+    MOV es:[di],dl
+    add di,320
+    cmp di,si
+    JNE izq
+
+
+    ;1
+    xor ah,ah 
+    MOV al,alturaX
+    MOV di,ax
+    getPos di,relativPos;si pos final
+    MOV di,si 
+    ;2
+    MOV ax,relativPos
+    add ax,anchuraY
+    mov auxP,ax
+    xor bh,bh 
+    MOV bl,alturaX
+    getPos  bx,auxP
+    MOV auxP,si 
+    ;si
+    arriba:
+    MOV es:[di],dl
+    inc di
+    cmp di,auxP
+    JNE arriba
+    
+
+
+    ;punto 3
+    MOV ax,relativPos
+    add ax,anchuraY
+    mov auxP,ax
+    xor bh,bh 
+    MOV bl,alturaX
+    getPos bx,auxP;si pos final
+    mov di,si    
+    ;punto 4 
+    getPos 190,auxP
+    der:
+    MOV es:[di],dl
+    add di,320
+    cmp di,si
+    JNE der
+
+        
+    ; lleva el conteo a la derecha
+    
+    xor cx,cx
+    MOV cx,espacioTotBarra
+    add relativPos,cx
+pop bx
+pop ax
+pop di 
+pop si 
+endM 
+graficadora macro array
+    LOCAL recorriendo , ex  
+    MOV relativPos,7
+    pusha
+    CALL ppMargen
+    call DeterminaCantidad
+    determinarAnchura anchuraY , espacio
+    ppNumeros array
+    xor cx,cx 
+    xor si,si 
+    recorriendo:
+        cmp si,lenTop;len
+        JAE ex 
+        xor ax,ax
+         MOV al, array[si]
+         MOV alturaX,al;aca num real 
+PUSH ax
+        xor dx,dx
+        getColor alturaX;color en dl 
+        determinarAltura alturaX,mayor
+        BarraPrint anchuraY,alturaX,espacio,dl 
+pop ax;recupero el valor orginal de alturaX
+        MOV alturaX,al;pregunta en getSound
+        getSound
+        inc si
+        JMP recorriendo
+    ex:
+    
+
+    
+    popa
+endM 
+
+getColor macro alturaX
+    LOCAL  AZUL , AMA , verde ,white , ex
+    CMP alturaX,1 
+    JB ex 
+    cmp alturaX,20
+    JA AZUL
+    MOV dl,40;rojo
+    JMP ex 
+    AZUL:
+        cmp alturaX,40
+        JA AMA
+        mov dl,32;azul
+        JMP ex
+    AMA:
+        cmp alturaX,60
+        JA verde
+        mov dl,44;amarillo
+        JMP ex
+    verde:
+        cmp alturaX,80
+        JA white
+        mov dl,47;verde
+        JMP ex
+    white:
+        mov dl,31;blanco
+        JMP ex
+    ex: 
+endM
+getSound macro
+ LOCAL  tres , quinientos , setecientos ,nueve , ex
+    CMP alturaX,1 
+    JB ex 
+    cmp alturaX,20
+    JA tres
+    sound 100 
+    JMP ex 
+    tres:
+        cmp alturaX,40
+        JA quinientos
+        sound 300 
+        JMP ex
+    quinientos:
+        cmp alturaX,60
+        JA setecientos
+        sound 500
+        JMP ex
+    setecientos:
+        cmp alturaX,80
+        JA nueve
+        sound 700 
+        JMP ex
+    nueve:
+        cmp alturaX,99 ; NO VA ACEPTAR MAS DE 100 :'V '
+        sound 900 
+    ex: 
+endM 
+
+
+sound macro hz
+    mov al,86h
+    out 43h,al;port
+    mov ax,(1193180/hz) ;numero de hz 
+    out 42h,al
+    MOV al,ah
+    out 42h,al
+    in al,61h;produce sounds 
+    OR al,00000011b
+    out 61h,al
+    delay tiempo; asi se escucha por un tiempo
+    ;apagar bocina
+    in al,61h
+    AND al,11111100b
+    out 61h,al
 endM
