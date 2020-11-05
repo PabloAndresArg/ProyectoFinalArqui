@@ -16,6 +16,7 @@ punto db '.'
 puntoC db ';'
 ese db 's'
 Ascii32 db 32
+velActual db 0
 ;ARCHIVOS
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
 menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
@@ -63,6 +64,8 @@ topP db 9,9,9,9,'TOP 10 PUNTOS',10,13,'$'
 topT db 9,9,9,9,'TOP 10 TIEMPO',10,13,'$'
 passOnlyNum db 10,13, 'SOLO SE ACEPTAN NUMEROS EN EL PASSWORD' ,10 ,13,'$'
 bienvenida db 10,13,'UNIVERSIDAD DE SAN CARLOS DE GUATEMALA',10,13,'FACULTAD DE INGENIERIA',10,13,'CIENCIAS Y SISTEMAS',10,13,'ARQUITECTURA DE COMPUTADORES Y ENSAMBLADORES 1',10,13,'PABLO ANDRES ARGUETA HERNANDEZ',10,13,'201800464',10,13,'SECCION B',10,13,'$' 
+metBur db 'Burbuja','$'
+velLet db 'velocidad:','$'
 contpp dw 0
 BarraInicio dw 1 dup('0'),'$'
 vel dw 0  
@@ -107,6 +110,7 @@ relativPos dw 0
 alturaX db 20
 ;graficadora
 .code
+activarModoVideo
 moverArrobaDS
 menuPrincipal:
     activaModoTexto
@@ -441,8 +445,27 @@ letreroUser proc
         pp buffUser
 RET
 letreroUser endP
-letrerotime proc 
-    PUSH ax 
+letreroMetodo proc 
+        MOV dh,1
+        MOV dl,1  
+        CALL cursor
+        pp metBur
+RET
+letreroMetodo endP
+letreroVel proc 
+        MOV dh,1;x
+        MOV dl,11 ;y
+        CALL cursor
+        pp velLet
+        XOR ah,ah
+        mov AL,velActual
+        CALL ppNum
+RET
+letreroVel endP
+
+letrerotime proc
+    PUSH ax
+    push dx 
         MOV dh,1
         MOV dl,28  
         CALL cursor
@@ -471,6 +494,7 @@ incre2:
         MOV al,segundos
         CALL ppNum
         PP vacio
+pop dx
 pop ax 
 RET
 letrerotime endP

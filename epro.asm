@@ -974,19 +974,22 @@ Mmenu2 macro
         mov DI,0
         sortBurbuja buffTimes,DI
         printTop10Times buffTimes
+        pp line 
         ReporteTopTime buffTimes
+        pp presiona32
+        leerChar
         activarModoVideo
         graficadora  AuxTop
         leerChar
         activaModoTexto
-        pp line 
-        leerChar
-        pp presiona32
+        menuOrdenamientos buffTimes
+        pp msg
     ex:
 endM
 calculaVel macro op
     LOCAL n0,n1,n2,n3,n4,n5,n6,n7,n8,n9,ex
     sub al,48
+    MOV velActual,al
     cmp al,0
     JE n0
     cmp al,1
@@ -1009,40 +1012,50 @@ calculaVel macro op
     JE n9
     JMP ex
     n0:
-        MOV tiempo,1150
+    MOV tiempo,1150
+    MOV vel,200
     JMP ex
     n1:
     MOV tiempo,950
+    MOV vel,400
     JMP ex
     
     n2:
     MOV tiempo,850
+    MOV vel,400
     JMP ex
     n3:
     MOV tiempo,800
+    MOV vel,400
     JMP ex
     n4:
     MOV tiempo,750
+    MOV vel,600
     JMP ex
     n5:
     MOV tiempo,700
+    MOV vel,800
     JMP ex
     n6:
     MOV tiempo,650
+    MOV vel,1000
     JMP ex
     n7:
     MOV tiempo,600
+    MOV vel,1200
     JMP ex
     n8:
     MOV tiempo,500
+    mov vel,1400
     JMP ex
     n9:
     MOV tiempo,400
+    mov vel,1600
     JMP ex
     ex:
 endM 
 menuOrdenamientos macro array 
-LOCAL burbuja,SolicitaOrder,asc,desc,ex
+LOCAL burbuja,SolicitaOrder,asc,desc,ex,again
 again: 
 pp menu3
 leerChar
@@ -1148,7 +1161,12 @@ LOCAL while1,while2,asc_,salida,salidita,continuar,cambia
 endM 
 ppNumeros macro array
  LOCAL IMP 
- push si 
+ push si
+ pusha
+    MOV dh,24
+    MOV dl,2    
+    CALL cursor ;dh = fila , dl = col 
+ popa
  xor si,si  
  IMP:
     xor ax,ax
@@ -1420,6 +1438,11 @@ graficadora macro array
     xor cx,cx 
     xor si,si 
     recorriendo:
+        push bx
+            mov bx,200
+            add time,bx
+        pop bx
+            call letrerotime
             cmp si,lenTop;len
             JAE ex 
             xor ax,ax
@@ -1568,8 +1591,12 @@ endM
 
 graph macro  arreglo
     pusha
-    activaModoTexto
-    activarModoVideo; clean
+    clearScreen
+    mov time,0
+    MOV segundos,0
+    MOV min,0
+    call letreroMetodo
+    CALL letreroVel
     limpiaArr AuxTop,sizeOF AuxTop,36
     CALL DeterminaCantidad 
     pusheaTop arreglo
@@ -1578,3 +1605,18 @@ graph macro  arreglo
     graficadora AuxTop
     popa 
 endM 
+
+clearScreen macro ;formula 320*i+j = (i,j)  0 a 319 y de 0 a 199 
+    LOCAL clear
+    PUSH di
+    PUSH dx
+        MOV dl,0h;color
+        MOV di,0
+        clear:
+        MOV es:[di],dl
+        inc di
+        cmp di,63994;(199,314)
+        JNE clear
+    pop dx
+    POP di 
+endM
