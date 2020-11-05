@@ -20,7 +20,8 @@ Ascii32 db 32
 menu db 10,13,'1) INGRESAR',10,13,'2) REGISTRAR',10,13,'3) SALIR',10,13,'Entrada:$'
 menu2 db 10,13,'1) TOP 10 puntos',10,13,'2) TOP 10 tiempo',10,13,'3) SALIR',10,13,'Entrada:$'
 menu3 db 10,13,'1) BubbleSort',10,13,'2) QuickSort',10,13,'3) ShellSort',10,13,'4) SALIR',10,13,'Entrada:$'
-menuOrder db 10,13,'1) ASCENDENTE',10,13,'2) DESCENDENTE',10,13,'Entrada:$'
+menu4 db 10,13,'INGRESE UN NUMERO DEL 0 AL 9 PARA DETERMINAR LA VELOCIDAD',10,13,'Entrada:$'
+menu5 db 10,13,'1) PARA ASCENDENTE ',10,13,'0) PARA  DESCENDENTE ',10,13,'Entrada:$'
 noEsparada db 10,13,'Entrada no esperada',10,13,'$'
 repetido db 10,13,'EL usuario : ' ,'$'
 yaenUso db ' YA ESTA EN USO',10,13,'$'
@@ -55,6 +56,7 @@ logIN_ db 10,13, '** LOGIN **' ,10 ,13,'$'
 okReg db 10,13, 'OK REGISTRADO..' ,10 ,13,'$'
 linea db 10,13, '--' ,10 ,13,'$'
 okLogeo db 10,13, 'ACCESO PERMITIDO' ,10 ,13,'$'
+msg db 10,13, 'ORDENAMIENTO FINALIZADO , REGRESANDO AL MENU PRINCIPAL DE ADMIN' ,10 ,13,'$'
 line  db 10,13,'--------------------------------------------------------------------------------',10,13,'$'; NO BORRAR
 lineF  db 10,13,'--------------------------------------------------------------------------------',10,13
 topP db 9,9,9,9,'TOP 10 PUNTOS',10,13,'$'
@@ -90,11 +92,12 @@ id_ dw 0
 auxP dw 0 
 ;graficardora 
 AuxTop  db 10 dup('$'),'$'
-msgMayor db 10,13, 'MAYOR: ','$'
+msgBugger db 10,13, 'delay: ','$'
+msgBug db 10,13, 'MUL: ','$'
 mayor db 0
 max db 0 
 lenTop dw 0
-tiempo dw 500
+tiempo dw 250
 cantidad db 0b
 anchuraY dw 0
 espacio  db 0b
@@ -105,7 +108,6 @@ alturaX db 20
 ;graficadora
 .code
 moverArrobaDS
-
 menuPrincipal:
     activaModoTexto
     pp bienvenida

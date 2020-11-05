@@ -118,7 +118,7 @@ POP ax
 endM
 leerChar MACRO 
     MOV ah, 01h
-    int 21h;la ejecuto 
+    int 21h;al
 endM 
 
 limpiaArr MACRO arreglo ,  len , charClean
@@ -956,14 +956,16 @@ Mmenu2 macro
         mov DI,0
         sortBurbuja buffPuntajes , DI
         printTop10Puntos buffPuntajes
+        pp line 
         ReporteTopPuntaje buffPuntajes 
+        pp presiona32
+        leerChar
         activarModoVideo
         graficadora  AuxTop
         leerChar
         activaModoTexto
-        pp line 
-        pp presiona32
-        leerChar
+        menuOrdenamientos buffPuntajes
+        pp msg
     JMP ex
     top2:;tiempo
         pp line 
@@ -982,6 +984,114 @@ Mmenu2 macro
         pp presiona32
     ex:
 endM
+calculaVel macro op
+    LOCAL n0,n1,n2,n3,n4,n5,n6,n7,n8,n9,ex
+    sub al,48
+    cmp al,0
+    JE n0
+    cmp al,1
+    JE n1
+    cmp al,2
+    JE n2
+    cmp al,3
+    JE n3
+    cmp al,4
+    JE n4
+    cmp al,5
+    JE n5
+    cmp al,6
+    JE n6
+    cmp al,7
+    JE n7
+    cmp al,8
+    JE n8
+    cmp al,9
+    JE n9
+    JMP ex
+    n0:
+        MOV tiempo,1150
+    JMP ex
+    n1:
+    MOV tiempo,950
+    JMP ex
+    
+    n2:
+    MOV tiempo,850
+    JMP ex
+    n3:
+    MOV tiempo,800
+    JMP ex
+    n4:
+    MOV tiempo,750
+    JMP ex
+    n5:
+    MOV tiempo,700
+    JMP ex
+    n6:
+    MOV tiempo,650
+    JMP ex
+    n7:
+    MOV tiempo,600
+    JMP ex
+    n8:
+    MOV tiempo,500
+    JMP ex
+    n9:
+    MOV tiempo,400
+    JMP ex
+    ex:
+endM 
+menuOrdenamientos macro array 
+LOCAL burbuja,SolicitaOrder,asc,desc,ex
+again: 
+pp menu3
+leerChar
+cmp al,49
+JE burbuja
+pp noEsparada
+JMP again
+burbuja:
+   pp ln
+   pp menu4;en al tengo la velocidad
+   leerChar
+   CMP al,57
+   JA burbuja
+   CMP AL,48
+   JB burbuja
+    calculaVel al
+   JMP  SolicitaOrder
+SolicitaOrder:
+    pp ln 
+    pp menu5
+    leerChar
+    CMP al,49
+    JA SolicitaOrder
+    xor ah,ah
+    sub al,48
+    mov DI,AX
+    cmp di,0 ;desc
+    JE desc
+    cmp di,1; asc
+    JE asc
+    JMP ex
+    desc: 
+        mov DI,1
+        sortBurbuja array , DI
+        MOV DI,0
+        sortBurbujaGraph array,DI
+        leerChar
+        JMP ex
+    asc:
+        mov DI,0
+        sortBurbuja array , DI
+        MOV DI,1
+        sortBurbujaGraph array,DI
+        leerChar
+        JMP ex
+    ex:
+    MOV tiempo,250
+endM
+
 
 sortBurbuja MACRO arreglo,tipo ; di para saber si es asc o desc
 LOCAL while1,while2,asc_,salida,salidita,continuar,cambia
@@ -1310,25 +1420,22 @@ graficadora macro array
     xor cx,cx 
     xor si,si 
     recorriendo:
-        cmp si,lenTop;len
-        JAE ex 
-        xor ax,ax
-         MOV al, array[si]
-         MOV alturaX,al;aca num real 
-PUSH ax
-        xor dx,dx
-        getColor alturaX;color en dl 
-        determinarAltura alturaX,mayor
-        BarraPrint anchuraY,alturaX,espacio,dl 
-pop ax;recupero el valor orginal de alturaX
-        MOV alturaX,al;pregunta en getSound
-        getSound
-        inc si
+            cmp si,lenTop;len
+            JAE ex 
+            xor ax,ax
+            MOV al, array[si]
+            MOV alturaX,al;aca num real 
+            PUSH ax
+            xor dx,dx
+            getColor alturaX;color en dl 
+            determinarAltura alturaX,mayor
+            BarraPrint anchuraY,alturaX,espacio,dl 
+            pop ax;recupero el valor orginal de alturaX
+            MOV alturaX,al;pregunta en getSound
+            getSound
+            inc si
         JMP recorriendo
-    ex:
-    
-
-    
+    ex:    
     popa
 endM 
 
@@ -1388,8 +1495,6 @@ getSound macro
         sound 900 
     ex: 
 endM 
-
-
 sound macro hz
     mov al,86h
     out 43h,al;port
@@ -1406,3 +1511,70 @@ sound macro hz
     AND al,11111100b
     out 61h,al
 endM
+
+sortBurbujaGraph MACRO arreglo,tipo ; di para saber si es asc o desc
+LOCAL while1,while2,asc_,salida,salidita,continuar,cambia
+    activarModoVideo
+    graph arreglo
+    xor bx,bx
+    xor ax,ax
+    xor dx,dx  
+    MOV dx,id_;indice recorrerdor 
+    while1:
+            cmp bx,dx;sale si llega al ultimo
+            JNB salida
+            MOV si,bx
+            INC si
+            while2:
+                cmp si,dx;sale si llega al ultimo
+                JNB salidita
+                MOV cl,arreglo[bx];a[i]
+                cmp tipo,1
+                JE asc_ 
+                    cmp cl,arreglo[si];a[j]
+                    JB cambia
+                    JMP continuar
+                    asc_:
+                    cmp cl,arreglo[si];a[j]
+                    JA cambia
+                continuar:
+                INC si
+            JMP while2
+        salidita:
+        INC bx
+    JMP while1
+    cambia:
+    push dx
+    MOV cl,buffTimes[bx]
+    MOV ch,buffTimes[si]
+    MOV dl,buffLevel[bx]
+    MOV dh,buffLevel[si]
+    MOV al,buffPuntajes[bx]
+    MOV ah,buffPuntajes[si]
+    MOV buffPuntajes[bx],ah
+    MOV buffPuntajes[si],al
+    MOV buffLevel[bx],dh
+    MOV buffLevel[si],dl
+    MOV buffTimes[bx],ch
+    MOV buffTimes[si],cl
+    CALL changeUser
+    graph arreglo
+    pop dx
+    JMP continuar
+    salida:
+    leerChar
+activaModoTexto
+endM 
+
+graph macro  arreglo
+    pusha
+    activaModoTexto
+    activarModoVideo; clean
+    limpiaArr AuxTop,sizeOF AuxTop,36
+    CALL DeterminaCantidad 
+    pusheaTop arreglo
+    popeaTop  AuxTop
+    calculaMayor AuxTop
+    graficadora AuxTop
+    popa 
+endM 
