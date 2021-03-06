@@ -14,15 +14,7 @@ Juego:
 
 ![](https://github.com/PabloAndresArg/ProyectoFinalArqui/blob/main/images/juego.png)
 
-Iniciando a ordenar:
-![](https://github.com/PabloAndresArg/ProyectoFinalArqui/blob/main/images/ordenamientos1.png)
+Ordenamiento burbuja: 
 
-
-Ordenando:
-![](https://github.com/PabloAndresArg/ProyectoFinalArqui/blob/main/images/ordenando.png)
-
-
-resultado: 
 ![](https://github.com/PabloAndresArg/ProyectoFinalArqui/blob/main/images/fin_ordenamiento.png)
-
 
